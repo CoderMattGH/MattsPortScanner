@@ -13,14 +13,11 @@
 #include <linux/if_packet.h>
 
 #include "packet_service.h"
+#include "constants.h"
 
 #ifndef DEBUG
     #define DEBUG 0
 #endif
-
-#define MAX_PORT 65535
-#define MAC_LEN 6
-#define IP_LEN 4
 
 unsigned short ip_checksum(unsigned short* start_of_header) {
     if (DEBUG >= 2) {

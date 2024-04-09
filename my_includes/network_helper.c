@@ -8,14 +8,11 @@
 #include <string.h>
 
 #include "network_helper.h"
+#include "constants.h"
 
 #ifndef DEBUG
     #define DEBUG 0
 #endif
-
-#define MAX_PORT 65535
-#define MAC_LEN 6
-#define IP_LEN 4
 
 int get_interface_index(int *sock, char *dev_name) {
     struct ifreq *ifreq_i = get_ifreq_struct(dev_name);
@@ -37,7 +34,7 @@ char * get_mac_str(const unsigned char* mac_add) {
     char * str = malloc(BUFF_SIZE);
     memset(str, 0, BUFF_SIZE);
     
-    snprintf(str, BUFF_SIZE - 1, "%02x-%02x-%02x-%02x-%02x-%02x", mac_add[0], 
+    snprintf(str, BUFF_SIZE - 1, "%02x:%02x:%02x:%02x:%02x:%02x", mac_add[0], 
             mac_add[1], mac_add[2], mac_add[3], mac_add[4], mac_add[5]);
     
     return str;
@@ -51,6 +48,16 @@ char * get_ip_str(struct in_addr *ip_add) {
     if (inet_ntop(AF_INET, ip_add, ip_str, INET_ADDRSTRLEN) == NULL) {
         return NULL;
     }
+
+    return ip_str;
+}
+
+char * get_ip_arr_str(unsigned char *ip_add) {
+    const int STR_SIZE = INET_ADDRSTRLEN * sizeof(char);
+    char *ip_str = malloc(STR_SIZE);
+    memset(ip_str, 0, STR_SIZE);
+
+    sprintf(ip_str, "%d.%d.%d.%d", ip_add[0], ip_add[1], ip_add[2], ip_add[3]);
 
     return ip_str;
 }
@@ -127,4 +134,23 @@ struct ifreq * get_ifreq_struct(char *dev_name) {
     strncpy(structure->ifr_name, dev_name, IFNAMSIZ - 1);
 
     return structure;
+}
+
+unsigned char * get_ip_arr_rep(const struct in_addr *ip_add) {
+    union ip_address {
+        struct in_addr def_rep;
+        unsigned char arr_rep[4];
+    };
+
+    union ip_address un;
+    un.def_rep = *ip_add;
+
+    unsigned char *ip_arr = malloc(sizeof(char) * IP_LEN);
+    memset(ip_arr, 0, sizeof(char) * IP_LEN);
+
+    for (int i = 0; i < IP_LEN; i++) {
+        ip_arr[i] = un.arr_rep[i];
+    }
+
+    return ip_arr;
 }

@@ -10,6 +10,11 @@ char * get_mac_str(const unsigned char* mac_add);
 char * get_ip_str(struct in_addr *ip_add);
 
 /*
+ * Converts an IP address represented as an array into a string.
+ */
+char * get_ip_arr_str(unsigned char *ip_add);
+
+/*
  * Converts an IP string to an in_addr struct.  
  * Returns NULL on error.
  */
@@ -42,3 +47,8 @@ struct ifreq * get_ifreq_struct(char *dev_name);
  * Returns -1 on error. 
  */
 int get_interface_index(int *sock, char *dev_name);
+
+/*
+ *  Get IP address as a char array.
+ */
+unsigned char * get_ip_arr_rep(const struct in_addr *ip_add);

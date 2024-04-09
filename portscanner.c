@@ -25,13 +25,16 @@
 #include "my_includes/network_helper.h"
 #include "my_includes/packet_service.h"
 #include "my_includes/arp_service.h"
+#include "my_includes/process_service.h"
 #include "my_includes/constants.h"
-
-#define DEBUG 2
 
 struct in_addr * get_gw_ip_address(char *dev_name);
 
-char * ip_to_mac(char *ip_address);
+char * search_arp_table(char *ip_address);
+
+unsigned char * get_mac_add_from_ip(unsigned char *tar_ip, int sock_raw, 
+        unsigned char *src_mac, unsigned char *src_ip, int dev_index, 
+        char* dev_name);
 
 int main(int argc, char *argv[]) {
     if (argc < 3) {
@@ -66,45 +69,6 @@ int main(int argc, char *argv[]) {
         return -1;
     }
 
-    // Search the ARP table for the MAC address associated with dest_ip.
-    char* mac_str = ip_to_mac(get_ip_str(dest_ip));
-
-    if (mac_str == NULL) {
-        printf("Cannot get ARP entry for IP address: %s\n", get_ip_str(dest_ip));
-        printf("Setting MAC_ADDRESS to gateway address.\n");
-        
-        struct in_addr *gw_ip_add = get_gw_ip_address(dev_name);
-        if(gw_ip_add == NULL) {
-            fprintf(stderr, "ERROR: Unable to get destination MAC address.\n");
-
-            return -1;
-        }
-
-        char* gw_ip_str = get_ip_str(gw_ip_add);
-        if (gw_ip_str == NULL) {
-            fprintf(stderr, 
-                    "ERROR: Unable to convert IP address into string.\n");
-        }
-
-        char *temp = ip_to_mac(gw_ip_str);
-        mac_dest = get_mac_from_str(temp);
-        if (mac_dest == NULL) {
-            fprintf(stderr, "ERROR: Unable to get destination MAC address.\n");
-
-            return -1;
-        }
-    } else {
-        mac_dest = get_mac_from_str(mac_str);
-    }
-
-    // Verbose tag
-    printf("Information\n");
-    printf("-----------\n\n");
-    printf("Destination IP:             %s\n", get_ip_str(dest_ip));
-    printf("Destination ports:          %d-%d\n", start_prt, end_prt);
-    printf("Destination MAC address:    %s\n", get_mac_str(mac_dest));
-    printf("Local network device:       %s\n", dev_name);
-
     int sock_raw = socket(AF_PACKET, SOCK_RAW, IPPROTO_RAW);
     if(sock_raw == -1) {
         fprintf(stderr, "ERROR: Cannot open raw socket!\n");
@@ -136,20 +100,25 @@ int main(int argc, char *argv[]) {
         return -1;
     }
 
+    // Search the ARP table for the MAC address associated with dest_ip.
+    mac_dest = get_mac_add_from_ip(get_ip_arr_rep(dest_ip), sock_raw,
+            loc_mac_add, get_ip_arr_rep(loc_ip_add), loc_int_index, dev_name);
+
+    if (mac_dest == NULL) {
+        fprintf(stderr, "ERROR: Cannot get MAC address of destination IP.\n");
+    }
+
+    // Verbose tag
+    printf("Information\n");
+    printf("-----------\n\n");
+    printf("Destination IP:             %s\n", get_ip_str(dest_ip));
+    printf("Destination ports:          %d-%d\n", start_prt, end_prt);
+    printf("Destination MAC address:    %s\n", get_mac_str(mac_dest));
+    printf("Local network device:       %s\n", dev_name);
+
     printf("Local device index:         %d\n", loc_int_index);
     printf("Local MAC address:          %s\n", get_mac_str(loc_mac_add));
     printf("Local IP address:           %s\n\n", get_ip_str(loc_ip_add));
-
-    // Send an ARP request to obtain MAC address of destination IP.
-    int result = send_arp_request(sock_raw, loc_mac_add, 
-            get_ip_arr_rep(loc_ip_add), get_ip_arr_rep(dest_ip), loc_int_index);
-
-    if (result < 0) {
-        fprintf(stderr, "ERROR: problem sending ARP packet!\n");
-
-        return -1;
-    }
-    printf("ARP Packet sent!\n");
 
     unsigned char *packet = construct_icmp_packet(get_ip_str(loc_ip_add), 
             get_ip_str(dest_ip), loc_mac_add, mac_dest);
@@ -171,9 +140,11 @@ int main(int argc, char *argv[]) {
     return 0;
 }
 
-/*
- * Returns the gateway of the IP address. 
- * Returns NULL on error.
+/**
+ * Returns the default gateway IP address of the supplied interface. 
+ * 
+ * @dev_name: The network interface name.
+ * @return: An IP address or NULL on error.
  */
 struct in_addr * get_gw_ip_address(char *dev_name) {
     printf("Trying to find IP address of default gateway!\n");
@@ -227,13 +198,15 @@ struct in_addr * get_gw_ip_address(char *dev_name) {
     return NULL;
 }
 
-/* 
+/** 
  * Queries the ARP table to get the assigned MAC address of the IP.
- * Note that if the IP address is not found in the table, then the
- * gateway address is returned.
- * Returns NULL if entry in ARP table cannot be found or error.
+ *
+ * @ip_address: A string representation of an IP address in the form
+ * xxx.xxx.xxx.xxx to search.
+ * @return: A string representation of the MAC address in the form 
+ * xx:xx:xx:xx:xx:xx.  NULL if entry not found or on ERROR. 
 */
-char * ip_to_mac(char *ip_address) {
+char * search_arp_table(char *ip_address) {
     if (DEBUG > 1)
         printf("Searching ARP table for IP address: %s.\n", ip_address);
 
@@ -289,3 +262,79 @@ char * ip_to_mac(char *ip_address) {
     return tokens[3];
 }
 
+/**
+ * Returns the MAC address associated with the IP address.  If an IP address
+ * cannot be found in the table, then the default gateway MAC address is
+ * returned instead.
+ * 
+ * @tar_ip: An array representation of an IPv4 address to search for.
+ * @sock_raw: Raw socket descriptor.
+ * @src_mac: Source MAC address in array format.
+ * @src_ip: Source IPv4 address in array format.
+ * @dev_index: An integer representing the local network interface id.
+ * @dev_name: Local network interface name.
+ * 
+ * @return: Returns the MAC address found in array format, or NULL if not found
+ * or error.
+ */
+unsigned char * get_mac_add_from_ip(unsigned char *tar_ip, int sock_raw, 
+        unsigned char *src_mac, unsigned char *src_ip, int dev_index, 
+        char* dev_name) {
+    if (DEBUG >= 2) {
+        printf("Attempting to obtain MAC address for IP address %s\n", 
+                get_ip_arr_str(tar_ip));
+    }
+
+    unsigned char *mac_dest;
+
+    int result = send_arp_request(sock_raw, src_mac, src_ip, tar_ip, dev_index);
+
+    if (result < 0) {
+        return NULL;
+    }
+
+    // Allow ARP request propagate.
+    sleep(2);
+
+    // Now query ARP table.
+    char* mac_str = search_arp_table(get_ip_arr_str(tar_ip));
+
+    // If cannot find MAC entry in ARP table.
+    if (mac_str == NULL) {
+        if (DEBUG >= 2) {
+            printf("Cannot get ARP entry for IP address: %s\n", 
+                    get_ip_arr_str(tar_ip));
+            printf("Obtaining default gateway MAC address!\n");
+        }
+
+        struct in_addr *gw_ip_add = get_gw_ip_address(dev_name);
+
+        if (gw_ip_add == NULL) {
+            return NULL;
+        }
+
+        // Recursive call
+        mac_dest = get_mac_add_from_ip(get_ip_arr_rep(gw_ip_add), 
+                sock_raw, src_mac, src_ip, dev_index, dev_name);
+
+        if (mac_dest == NULL) {
+            return NULL;
+        }
+
+        if (DEBUG >= 2) {
+            printf("Default gateway MAC address obtained!\n");
+        }
+    } else {
+        if (DEBUG >= 2) {
+            printf("Successfully obtained MAC address from ARP table!\n");
+        }
+
+        mac_dest = get_mac_from_str(mac_str);
+
+        if (mac_dest == NULL) {
+            return NULL;
+        }
+    }
+
+    return mac_dest;
+}
