@@ -47,10 +47,9 @@ char ** load_process(const char* path) {
 
         // Remove new line from output
         output[strcspn(output, "\n")] = 0;
+
         // Copy output string to array
         strncpy((ret_arr[count++]), output, MAX_LINE_LEN - 1);
-        
-        count++;
     }
 
     // Set last element as NULL
