@@ -20,16 +20,14 @@
 
 #include <time.h>
 
+#include <net/if_arp.h>
+
 #include "my_includes/network_helper.h"
 #include "my_includes/packet_service.h"
+#include "my_includes/arp_service.h"
+#include "my_includes/constants.h"
 
-#ifndef DEBUG
-    #define DEBUG 1
-#endif
-
-#define MAX_PORT 65535
-#define MAC_LEN 6
-#define IP_LEN 4
+#define DEBUG 2
 
 struct in_addr * get_gw_ip_address(char *dev_name);
 
@@ -74,8 +72,8 @@ int main(int argc, char *argv[]) {
     if (mac_str == NULL) {
         printf("Cannot get ARP entry for IP address: %s\n", get_ip_str(dest_ip));
         printf("Setting MAC_ADDRESS to gateway address.\n");
+        
         struct in_addr *gw_ip_add = get_gw_ip_address(dev_name);
-
         if(gw_ip_add == NULL) {
             fprintf(stderr, "ERROR: Unable to get destination MAC address.\n");
 
@@ -90,7 +88,6 @@ int main(int argc, char *argv[]) {
 
         char *temp = ip_to_mac(gw_ip_str);
         mac_dest = get_mac_from_str(temp);
-
         if (mac_dest == NULL) {
             fprintf(stderr, "ERROR: Unable to get destination MAC address.\n");
 
@@ -106,7 +103,7 @@ int main(int argc, char *argv[]) {
     printf("Destination IP:             %s\n", get_ip_str(dest_ip));
     printf("Destination ports:          %d-%d\n", start_prt, end_prt);
     printf("Destination MAC address:    %s\n", get_mac_str(mac_dest));
-    printf("Local network device:       %s\n", "enp4s0");
+    printf("Local network device:       %s\n", dev_name);
 
     int sock_raw = socket(AF_PACKET, SOCK_RAW, IPPROTO_RAW);
     if(sock_raw == -1) {
@@ -142,6 +139,17 @@ int main(int argc, char *argv[]) {
     printf("Local device index:         %d\n", loc_int_index);
     printf("Local MAC address:          %s\n", get_mac_str(loc_mac_add));
     printf("Local IP address:           %s\n\n", get_ip_str(loc_ip_add));
+
+    // Send an ARP request to obtain MAC address of destination IP.
+    int result = send_arp_request(sock_raw, loc_mac_add, 
+            get_ip_arr_rep(loc_ip_add), get_ip_arr_rep(dest_ip), loc_int_index);
+
+    if (result < 0) {
+        fprintf(stderr, "ERROR: problem sending ARP packet!\n");
+
+        return -1;
+    }
+    printf("ARP Packet sent!\n");
 
     unsigned char *packet = construct_icmp_packet(get_ip_str(loc_ip_add), 
             get_ip_str(dest_ip), loc_mac_add, mac_dest);
@@ -280,3 +288,4 @@ char * ip_to_mac(char *ip_address) {
 
     return tokens[3];
 }
+
