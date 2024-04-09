@@ -13,7 +13,6 @@
  * @path: The path to execute.
  * @return: A 2d char array, or NULL on error.
  */
-//TODO: Trim extra lines
 char ** load_process(const char* path) {
     if (DEBUG >= 2) {
         printf("Parsing output of process path: %s\n", path);
