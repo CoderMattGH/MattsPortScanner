@@ -17,10 +17,12 @@
 #include "arp_service.h"
 #include "packet_service.h"
 #include "network_helper.h"
+#include "process_service.h"
 #include "constants.h"
 
-unsigned char * make_arp_packet(unsigned char *src_mac, unsigned char *dst_mac, 
-        unsigned char *src_ip, unsigned char *tar_ip) {
+unsigned char * make_arp_packet(const unsigned char *src_mac, 
+        const unsigned char *dst_mac, const unsigned char *src_ip, 
+        const unsigned char *tar_ip) {
     if (DEBUG >= 2) {
         printf("Constructing ARP request packet for IP: %s\n",
                 get_ip_arr_str(tar_ip));
@@ -89,8 +91,9 @@ unsigned char * make_arp_packet(unsigned char *src_mac, unsigned char *dst_mac,
     return sendbuff;
 }
 
-int send_arp_request(int sock_raw, unsigned char *src_mac, 
-        unsigned char *src_ip, unsigned char *tar_ip, int dev_index) {
+int send_arp_request(int sock_raw, const unsigned char *src_mac, 
+        const unsigned char *src_ip, const unsigned char *tar_ip, 
+        int dev_index) {
     if (DEBUG >= 2) {
         printf("Sending ARP request for IP: %s\n", get_ip_arr_str(tar_ip));
     }
@@ -122,7 +125,7 @@ int send_arp_request(int sock_raw, unsigned char *src_mac,
     return 0;
 }
 
-char * search_arp_table(char *ip_address) {
+char * search_arp_table(const char *ip_address) {
     if (DEBUG >= 2)
         printf("Searching ARP table for IP address: %s.\n", ip_address);
 
@@ -184,9 +187,9 @@ char * search_arp_table(char *ip_address) {
     return NULL;
 }
 
-unsigned char * get_mac_add_from_ip(unsigned char *tar_ip, int sock_raw, 
-        unsigned char *src_mac, unsigned char *src_ip, int dev_index, 
-        char* dev_name) {
+unsigned char * get_mac_add_from_ip(const unsigned char *tar_ip, int sock_raw, 
+        const unsigned char *src_mac, const unsigned char *src_ip, 
+        int dev_index, const char* dev_name) {
     if (DEBUG >= 2) {
         printf("Attempting to obtain MAC address for IP address %s\n", 
                 get_ip_arr_str(tar_ip));

@@ -13,8 +13,9 @@
  * 
  * tar_ip: A target IP address represented in array format.
  */
-unsigned char * make_arp_packet(unsigned char *src_mac, unsigned char *dst_mac, 
-        unsigned char *src_ip, unsigned char *tar_ip);
+unsigned char * make_arp_packet(const unsigned char *src_mac, 
+        const unsigned char *dst_mac, const unsigned char *src_ip, 
+        const unsigned char *tar_ip);
 
 /*
  * Function: send_arp_request
@@ -35,8 +36,9 @@ unsigned char * make_arp_packet(unsigned char *src_mac, unsigned char *dst_mac,
  * 
  * return: Returns 0 on success, -1 on error.
  */
-int send_arp_request(int sock_raw, unsigned char *src_mac, 
-        unsigned char *src_ip, unsigned char *tar_ip, int dev_index);        
+int send_arp_request(int sock_raw, const unsigned char *src_mac, 
+        const unsigned char *src_ip, const unsigned char *tar_ip, 
+        int dev_index);        
 
 /* 
  * Function: search_arp_table
@@ -49,7 +51,7 @@ int send_arp_request(int sock_raw, unsigned char *src_mac,
  *         not found.
  *         
 */
-char * search_arp_table(char *ip_address);
+char * search_arp_table(const char *ip_address);
 
 /*
  * Function: get_mac_add_from_ip
@@ -73,6 +75,6 @@ char * search_arp_table(char *ip_address);
  * return: Returns the MAC address found in array format, or NULL if not found
  *         or error.
  */
-unsigned char * get_mac_add_from_ip(unsigned char *tar_ip, int sock_raw, 
-        unsigned char *src_mac, unsigned char *src_ip, int dev_index, 
-        char* dev_name);
+unsigned char * get_mac_add_from_ip(const unsigned char *tar_ip, int sock_raw, 
+        const unsigned char *src_mac, const unsigned char *src_ip, 
+        int dev_index, const char* dev_name);
