@@ -162,6 +162,8 @@ struct in_addr * get_gw_ip_address(char *dev_name) {
 
     char **output = load_process(path_buff);
 
+    free(path_buff);
+
     if (output == NULL) {
         return NULL;
     }
@@ -181,8 +183,9 @@ struct in_addr * get_gw_ip_address(char *dev_name) {
                 token = strtok(NULL, " ");
                 
                 // IP address not found
-                if (token == NULL)
+                if (token == NULL) {
                     return NULL;
+                }
                 
                 struct in_addr *ip_add = get_ip_from_str(token);
 
@@ -194,12 +197,16 @@ struct in_addr * get_gw_ip_address(char *dev_name) {
                             get_ip_str(ip_add));
                 }
 
+                free(output);
+
                 return ip_add;
-            } else {
-                token = strtok(NULL, " ");
-            }
+            }     
+            
+            token = strtok(NULL, " ");
         }
     }
+
+    free(output);
 
     return NULL;
 }
@@ -263,9 +270,10 @@ char * search_arp_table(char *ip_address) {
 
                 return mac_add;
             }
-        }
 
-        free(token);
+            // Get next token
+            token = strtok(NULL, " ");
+        }
     }
 
     free(output);
