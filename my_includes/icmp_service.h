@@ -47,7 +47,7 @@ unsigned char * construct_icmp_packet(const char *src_ip, const char *dst_ip,
  * Constructs a raw socket and listens for a ICMP response with the relevant
  * source MAC address, source IP address and destination IP address.
  * 
- * TODO: Timeout
+ * NOTE: Will timeout after 7 seconds.
  * 
  * loc_mac: The local MAC address represented as an array.
  * 

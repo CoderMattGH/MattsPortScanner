@@ -8,6 +8,10 @@
 #include <netinet/ip.h>
 #include <netinet/ip_icmp.h>
 
+#include <errno.h>
+
+#include <time.h>
+
 #include "icmp_service.h"
 #include "packet_service.h"
 #include "network_helper.h"
@@ -133,13 +137,35 @@ int listen_for_icmp_response(const unsigned char *loc_mac,
     struct sockaddr saddr;
     int saddr_len = sizeof(struct sockaddr);
 
-    while (1) {
-        // Receive a network packet and copy in to buffer
-        int buff_len = recvfrom(icmp_sock_raw, buffer, PACKET_SIZE, 0, &saddr, 
-                (socklen_t *)&saddr_len);
-        
-        if (buff_len < 0) {
-            return -1;
+    // Sleep time in microseconds (currently 0.1 seconds)
+    const int SLEEP_TIME_MICS = 1000 * 1000 * 0.1;
+
+    // Timeout in seconds
+    const int TIMEOUT_SECS = 7;             
+
+    long int start_time = time(0);
+    long int curr_time = time(0);
+    while ((curr_time - start_time) <= TIMEOUT_SECS) {
+        // Clear errno
+        errno = 0;
+
+        // Get current time
+        curr_time = time(0);        
+
+        // Receive a network packet and copy in to buffer (Non-blocking)
+        int buff_len = recvfrom(icmp_sock_raw, buffer, PACKET_SIZE, MSG_DONTWAIT,
+                &saddr, (socklen_t *)&saddr_len);
+
+        if (buff_len == -1) {
+            // Would block
+            if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                usleep(SLEEP_TIME_MICS);
+
+                continue;
+            } else {
+                // An error occurred
+                return -1;
+            }
         }
 
         // Extract ethernet header
@@ -147,12 +173,8 @@ int listen_for_icmp_response(const unsigned char *loc_mac,
 
         if (DEBUG >= 3) {
             printf("Packet received: ");
-            printf("src_mac: %02x:%02x:%02x:%02x:%02x:%02x ", eth->h_source[0], 
-                    eth->h_source[1], eth->h_source[2], eth->h_source[3],
-                    eth->h_source[4], eth->h_source[5]);
-            printf("dst_ac: %02x:%02x:%02x:%02x:%02x:%02x\n", eth->h_dest[0], 
-                    eth->h_dest[1], eth->h_dest[2], eth->h_dest[3], eth->h_dest[4],
-                    eth->h_dest[5]);
+            printf("src_mac: %s", get_mac_str(eth->h_source));
+            printf("dst_ac: %s\n", get_mac_str(eth->h_dest));
         }
 
         // Check MAC source address matches local interface
@@ -172,9 +194,9 @@ int listen_for_icmp_response(const unsigned char *loc_mac,
         unsigned char* ip_dst_pack = get_ip_32_arr(iph->daddr);
 
         if (DEBUG >= 2) {
-            printf("ICMP packet: src_ip: %s ", get_ip_arr_str(ip_src_pack));
-            printf("dst_ip: %s ", get_ip_arr_str(ip_dst_pack));
-            printf("ip_proto: %d\n", iph->protocol);
+            printf("ICMP packet: ");
+            printf("src_ip: %s ", get_ip_arr_str(ip_src_pack));
+            printf("dst_ip: %s\n", get_ip_arr_str(ip_dst_pack));
         }
 
         // Check that ICMP response is from the target
