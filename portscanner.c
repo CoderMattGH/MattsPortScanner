@@ -29,14 +29,6 @@
 #include "my_includes/icmp_service.h"
 #include "my_includes/constants.h"
 
-struct in_addr * get_gw_ip_address(char *dev_name);
-
-char * search_arp_table(char *ip_address);
-
-unsigned char * get_mac_add_from_ip(unsigned char *tar_ip, int sock_raw, 
-        unsigned char *src_mac, unsigned char *src_ip, int dev_index, 
-        char* dev_name);
-
 int main(int argc, char *argv[]) {
     if (argc < 3) {
         printf("usage: mps <destination_ip> <interface_name>\n");
@@ -142,75 +134,4 @@ int main(int argc, char *argv[]) {
     }
 
     return 0;
-}
-
-/**
- * Returns the default gateway IP address of the supplied interface. 
- * 
- * @dev_name: The network interface name.
- * @return: An IP address or NULL on error.
- */
-struct in_addr * get_gw_ip_address(char *dev_name) {
-    if (DEBUG >= 2) {
-        printf("Trying to find IP address of default gateway\n");
-    }
-
-    const char* path = "route -n | grep ";
-
-    const int MAX_PATH_BUFF = 200;
-    char* path_buff = malloc(sizeof(char) * MAX_PATH_BUFF);
-    memset(path_buff, 0, sizeof(MAX_PATH_BUFF * sizeof(char)));
-    
-    strncpy(path_buff, path, 100);
-    strncat(path_buff, dev_name, 99);
-
-    char **output = load_process(path_buff);
-
-    free(path_buff);
-
-    if (output == NULL) {
-        return NULL;
-    }
-
-    char *token;
-    for (int i = 0; output[i] != NULL; i++) {
-        // Tokenise output to help parse
-        token = strtok(output[i], " ");
-
-        for (int j = 0; token != NULL; j++) {
-            if(strcmp("0.0.0.0", token) == 0) {
-                if (DEBUG >= 2) {
-                    printf("Default gateway row identified\n");
-                }
-
-                // Next token should be default gateway IP address
-                token = strtok(NULL, " ");
-                
-                // IP address not found
-                if (token == NULL) {
-                    return NULL;
-                }
-                
-                struct in_addr *ip_add = get_ip_from_str(token);
-
-                if (ip_add == NULL)
-                    return NULL;
-
-                if (DEBUG >= 2) {
-                    printf("Default gateway IP found: %s!\n", 
-                            get_ip_str(ip_add));
-                }
-
-                free(output);
-
-                return ip_add;
-            }     
-            
-            token = strtok(NULL, " ");
-        }
-    }
-
-    free(output);
-
-    return NULL;
 }
