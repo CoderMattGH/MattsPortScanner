@@ -40,3 +40,22 @@ int send_icmp_request(const char* src_ip, const char* dst_ip,
  */
 unsigned char * construct_icmp_packet(const char *src_ip, const char *dst_ip, 
         const unsigned char *src_mac, const unsigned char *dst_mac);
+
+/*
+ * Function: listen_for_icmp_response
+ * ----------------------------------
+ * Constructs a raw socket and listens for a ICMP response with the relevant
+ * source MAC address, source IP address and destination IP address.
+ * 
+ * TODO: Timeout
+ * 
+ * loc_mac: The local MAC address represented as an array.
+ * 
+ * loc_ip: The local IP address represented as an array.
+ * 
+ * tar_ip: The target IP address represented as an array.
+ * 
+ * return: 1 if ICMP response was received, 0 if not, or -1 if error.
+ */
+int listen_for_icmp_response(const unsigned char *loc_mac, 
+        const unsigned char *loc_ip, const unsigned char *tar_ip);

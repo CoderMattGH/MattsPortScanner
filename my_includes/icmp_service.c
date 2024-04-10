@@ -10,6 +10,7 @@
 
 #include "icmp_service.h"
 #include "packet_service.h"
+#include "network_helper.h"
 #include "constants.h"
 
 int send_icmp_request(const char* src_ip, const char* dst_ip, 
@@ -110,3 +111,84 @@ unsigned char * construct_icmp_packet(const char *src_ip, const char *dst_ip,
 
     return sendbuff;
 }  
+
+int listen_for_icmp_response(const unsigned char *loc_mac, 
+        const unsigned char *loc_ip, const unsigned char *tar_ip) {
+    if (DEBUG >= 2) {
+        printf("Listening for ICMP response\n");
+    }
+
+    const int PACKET_SIZE = 65536;
+
+    // Construct raw socket and listen to all IPv4 packets
+    int icmp_sock_raw = socket(AF_PACKET, SOCK_RAW, htons(ETH_P_IP));
+
+    if (icmp_sock_raw < 0) {
+        return -1;
+    }
+
+    unsigned char *buffer = malloc(PACKET_SIZE * sizeof(char));
+    memset(buffer, 0, PACKET_SIZE);
+
+    struct sockaddr saddr;
+    int saddr_len = sizeof(struct sockaddr);
+
+    while (1) {
+        // Receive a network packet and copy in to buffer
+        int buff_len = recvfrom(icmp_sock_raw, buffer, PACKET_SIZE, 0, &saddr, 
+                (socklen_t *)&saddr_len);
+        
+        if (buff_len < 0) {
+            return -1;
+        }
+
+        // Extract ethernet header
+        struct ethhdr *eth = (struct ethhdr *)(buffer);
+
+        if (DEBUG >= 3) {
+            printf("Packet received: ");
+            printf("src_mac: %02x:%02x:%02x:%02x:%02x:%02x ", eth->h_source[0], 
+                    eth->h_source[1], eth->h_source[2], eth->h_source[3],
+                    eth->h_source[4], eth->h_source[5]);
+            printf("dst_ac: %02x:%02x:%02x:%02x:%02x:%02x\n", eth->h_dest[0], 
+                    eth->h_dest[1], eth->h_dest[2], eth->h_dest[3], eth->h_dest[4],
+                    eth->h_dest[5]);
+        }
+
+        // Check MAC source address matches local interface
+        if (compare_mac_add(loc_mac, eth->h_dest) != 0) {
+            continue;
+        }
+
+        // Extract IP header
+        struct iphdr *iph = (struct iphdr *)(buffer + sizeof(struct ethhdr));
+
+        // Filter ICMP packets (Protocol 0x01)
+        if (iph->protocol != 0x01) {
+            continue;
+        }
+
+        unsigned char* ip_src_pack = get_ip_32_arr(iph->saddr);
+        unsigned char* ip_dst_pack = get_ip_32_arr(iph->daddr);
+
+        if (DEBUG >= 2) {
+            printf("ICMP packet: src_ip: %s ", get_ip_arr_str(ip_src_pack));
+            printf("dst_ip: %s ", get_ip_arr_str(ip_dst_pack));
+            printf("ip_proto: %d\n", iph->protocol);
+        }
+
+        // Check that ICMP response is from the target
+        if ((compare_ip_add(loc_ip, ip_dst_pack) != 0) || 
+                (compare_ip_add(tar_ip, ip_src_pack) != 0)) {
+            continue;
+        }
+
+        if (DEBUG >= 2) {
+            printf("Target ICMP request received\n");
+        }
+
+        break;
+    }
+
+    close(icmp_sock_raw);
+}
