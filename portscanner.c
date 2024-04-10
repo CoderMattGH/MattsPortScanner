@@ -147,36 +147,35 @@ int main(int argc, char *argv[]) {
  * @return: An IP address or NULL on error.
  */
 struct in_addr * get_gw_ip_address(char *dev_name) {
-    printf("Trying to find IP address of default gateway!\n");
+    if (DEBUG >= 2) {
+        printf("Trying to find IP address of default gateway!\n");
+    }
 
-    FILE *fp;
     const char* path = "route -n | grep ";
+
+    const int MAX_PATH_BUFF = 200;
+    char* path_buff = malloc(sizeof(char) * MAX_PATH_BUFF);
+    memset(path_buff, 0, sizeof(MAX_PATH_BUFF * sizeof(char)));
     
-    const int P_BUFF_SIZE = sizeof(char) * 100;
-    char* path_buff = malloc(P_BUFF_SIZE);
-    memset(path_buff, 0, P_BUFF_SIZE);
-    strncpy(path_buff, path, strlen(path));
-    strncat(path_buff, dev_name, P_BUFF_SIZE - 1 - strlen(path_buff));
+    strncpy(path_buff, path, 100);
+    strncat(path_buff, dev_name, 99);
 
-    fp = popen(path_buff, "r");
+    char **output = load_process(path_buff);
 
-    const int OUTPUT_SIZE = sizeof(char) * 100;
-    char *output = malloc(OUTPUT_SIZE);
-    memset(output, 0, OUTPUT_SIZE);
-
-    char *retVal;
     char *token;
-    while((retVal = fgets(output, OUTPUT_SIZE, fp)) != NULL) {
-        printf("OUTPUT: %s\n", output);
-        
-        // Parse output
-        token = strtok(output, " ");
-        for (int i = 0; token != NULL; i++) {
+    for (int i = 0; output[i] != NULL; i++) {
+        // Tokenise output to help parse
+        token = strtok(output[i], " ");
+        for (int j = 0; token != NULL; j++) {
             if(strcmp("0.0.0.0", token) == 0) {
-                printf("Gateway row obtained!\n");
+                if (DEBUG >= 2) {
+                    printf("Default gateway row identified!\n");
+                }
+
+                // Next token should be default gateway IP address
                 token = strtok(NULL, " ");
                 
-                // ERROR: Could not obtain IP address for default gateway
+                // IP address not found
                 if (token == NULL)
                     return NULL;
                 
@@ -185,8 +184,10 @@ struct in_addr * get_gw_ip_address(char *dev_name) {
                 if (ip_add == NULL)
                     return NULL;
 
-                // Default gateway IP address found!
-                printf("Default gateway IP found: %s!\n", get_ip_str(ip_add));
+                if (DEBUG >= 2) {
+                    printf("Default gateway IP found: %s!\n", 
+                            get_ip_str(ip_add));
+                }
 
                 return ip_add;
             } else {
