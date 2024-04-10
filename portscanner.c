@@ -162,10 +162,15 @@ struct in_addr * get_gw_ip_address(char *dev_name) {
 
     char **output = load_process(path_buff);
 
+    if (output == NULL) {
+        return NULL;
+    }
+
     char *token;
     for (int i = 0; output[i] != NULL; i++) {
         // Tokenise output to help parse
         token = strtok(output[i], " ");
+
         for (int j = 0; token != NULL; j++) {
             if(strcmp("0.0.0.0", token) == 0) {
                 if (DEBUG >= 2) {
@@ -208,59 +213,64 @@ struct in_addr * get_gw_ip_address(char *dev_name) {
  * xx:xx:xx:xx:xx:xx.  NULL if entry not found or on ERROR. 
 */
 char * search_arp_table(char *ip_address) {
-    if (DEBUG > 1)
+    if (DEBUG >= 2)
         printf("Searching ARP table for IP address: %s.\n", ip_address);
 
     const char *COMMAND = "arp -a ";
 
-    FILE *fp;
     const int MAX_PATH = 200;
     char *path = malloc(sizeof(char) * MAX_PATH);
     memset(path, 0, sizeof(char) * MAX_PATH);
 
-    strncpy(path, COMMAND, MAX_PATH - 1);
-    strncat(path, ip_address, (MAX_PATH - 1) - strlen(path));
+    strncpy(path, COMMAND, 100);
+    strncat(path, ip_address, 99);
 
-    fp = popen(path, "r");
+    char **output = load_process(path);
 
-    char* output = malloc(sizeof(char) * 100);
-    memset(output, 0, sizeof(char) * 100);
-    
-    char *retVal = fgets(output, sizeof(char) * 100, fp);
-    if (retVal == NULL) {
+    free(path);
+
+    if (output == NULL) {
         return NULL;
     }
 
-    // Check if arp entry exists
-    if (strstr(output, "no match found") != NULL) {
-        printf("No ARP entry found!\n");
+    // Read first line of output
+    if (strstr(output[0], "no match found") != NULL) {
+        if (DEBUG >= 2) {
+            printf("No ARP entry found!\n");
+        }
+
+        free(output);
 
         return NULL;
     }
 
+    char *mac_add;
     char *token;
-    token = strtok(output, " ");
+    for (int i = 0; output[i] != NULL; i++) {
+        // Tokenise to help parse
+        token = strtok(output[i], " ");
 
-    const int MAX_TOKENS = 10;
-    char *tokens[MAX_TOKENS];
-    for (int i = 0; i < MAX_TOKENS; i++) {
-        tokens[i] = NULL;
+        for(int j = 0; token!= NULL; j++) {
+            // Parse 3rd token which should be the MAC address
+            if (j == 3) {
+                if (DEBUG >= 2) {
+                    printf("MAC address found: %s\n", token);
+                }
+
+                mac_add = token;
+                
+                free(output);
+
+                return mac_add;
+            }
+        }
+
+        free(token);
     }
 
-    // Walk through other tokens
-    for(int i = 0; token != NULL && i < MAX_TOKENS; i++) {
-        tokens[i] = token;
+    free(output);
 
-        token = strtok(NULL, " ");
-    }
-    
-    for(int i = 0; tokens[i] != NULL; i++) {
-        printf("TOKENS: %s\n", tokens[i]);
-    }
-
-    printf("MAC address found: %s!\n", tokens[3]);
-
-    return tokens[3];
+    return NULL;
 }
 
 /**
