@@ -20,6 +20,6 @@ unsigned short icmp_checksum(unsigned short* start_of_header);
  * Attempts to send a supplied packet using the supplied parameters.
  * Returns -1 on error otherwise returned the length in bytes sent.
  */
-int send_packet(unsigned char* packet, int packet_len, int socket, 
-        int dev_index, unsigned char* mac_src);
+int send_packet(const unsigned char *packet, int packet_len, int socket, 
+        int dev_index, const unsigned char *mac_src);
 

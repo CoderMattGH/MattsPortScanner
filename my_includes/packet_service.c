@@ -83,8 +83,8 @@ unsigned short icmp_checksum(unsigned short* start_of_header) {
     return result;
 }
 
-int send_packet(unsigned char* packet, int packet_len, int socket, 
-        int dev_index, unsigned char* mac_src) {
+int send_packet(const unsigned char *packet, int packet_len, int socket, 
+        int dev_index, const unsigned char *mac_src) {
     struct sockaddr_ll sadr_ll;
     sadr_ll.sll_ifindex = dev_index;
     sadr_ll.sll_halen = ETH_ALEN;
