@@ -60,14 +60,6 @@ unsigned char * make_arp_packet(const unsigned char *src_mac,
 
     total_len += sizeof(struct arphdr);
 
-    // Construct the ARP payload
-    struct arp_payload {
-        unsigned char src_mac[MAC_LEN];
-        unsigned char src_ip[IP_LEN];
-        unsigned char tar_mac[MAC_LEN];
-        unsigned char tar_ip[IP_LEN];
-    };
-
     struct arp_payload *payload = (struct arp_payload *)
             (sendbuff + sizeof(struct ethhdr) + sizeof(struct arphdr));
     
@@ -247,4 +239,101 @@ unsigned char * get_mac_add_from_ip(const unsigned char *tar_ip, int sock_raw,
     }
 
     return mac_dest;
+}
+
+// TODO: Add timeout
+unsigned char * listen_for_arp_response(const unsigned char *loc_mac, 
+        const unsigned char *loc_ip, const unsigned char *tar_ip) {
+    if (DEBUG >= 2) {
+        printf("Listening for ARP response\n");
+    }
+
+    const int PACKET_SIZE = 65536;
+
+    // Construct raw socket and listen to all ARP packets
+    int arp_sock_raw = socket(AF_PACKET, SOCK_RAW, htons(ETH_P_ARP));
+
+    if (arp_sock_raw < 0) {
+        return NULL;
+    }
+
+    unsigned char *buffer = malloc(PACKET_SIZE * sizeof(char));
+    memset(buffer, 0, PACKET_SIZE * sizeof(char));
+
+    struct sockaddr saddr;
+    int saddr_len = sizeof(struct sockaddr);
+
+    while (1) {
+        // Receive a network packet and copy it into buffer
+        int buff_len = recvfrom(arp_sock_raw, buffer, PACKET_SIZE, 0, &saddr,
+                (socklen_t *)&saddr_len);
+        
+        if (buff_len < 0) {
+            return NULL;
+        }
+
+        // Extract ethernet header
+        struct ethhdr *eth = (struct ethhdr *)(buffer);
+
+        if (DEBUG >= 2) {
+            printf("ARP packet received: ");
+            printf("src_mac: %s ", get_mac_str(eth->h_source));
+            printf("dst_mac: %s\n", get_mac_str(eth->h_dest));
+        }
+
+        // Check MAC source address matches local interface
+        if (compare_mac_add(loc_mac, eth->h_dest) != 0) {
+            continue;
+        }
+
+        // Extract ARP header
+        struct arphdr *arph = (struct arphdr *)(buffer + sizeof(struct ethhdr));
+
+        if (DEBUG >= 2) {
+            printf("ARP packet: ");
+            printf("op-code: %d\n", htons(arph->ar_op));
+        }
+
+        // Extract data payload
+        struct arp_payload *arppl = (struct arp_payload *)
+                (buffer + sizeof(struct ethhdr) + sizeof(struct arphdr));
+        
+        if (DEBUG >= 2) {
+            printf("ARP payload: ");
+            printf("src_ip: %s ", get_ip_arr_str(arppl->src_ip));
+            printf("dst_ip: %s ", get_ip_arr_str(arppl->tar_ip));
+            printf("src_mac: %s ", get_mac_str(arppl->src_mac));
+            printf("dst_mac: %s\n", get_mac_str(arppl->tar_mac));
+        }
+
+        // Check that payload contains target MAC address
+        if ((compare_ip_add(tar_ip, arppl->src_ip) != 0) || 
+                (compare_ip_add(loc_ip, arppl->tar_ip) != 0) ||
+                (compare_mac_add(loc_mac, arppl->tar_mac) != 0))
+            {
+                continue;
+            }
+        
+            if (DEBUG >= 2) {
+                printf("Correct ARP reply verified.\n");
+            }
+
+            close(arp_sock_raw);
+
+            // Copy MAC address of target to new buffer
+            unsigned char *mac_tar = malloc(sizeof(char) * MAC_LEN);
+            memset(mac_tar, 0, sizeof(char) * MAC_LEN);
+
+            for (int i = 0; i < MAC_LEN; i++) {
+                mac_tar[i] = arppl->src_mac[i];
+            }
+
+            free(buffer);
+
+            if (DEBUG >= 2) {
+                printf("Target MAC address: %s\n", get_mac_str(mac_tar));
+            }
+
+            return mac_tar;
+    }
 }

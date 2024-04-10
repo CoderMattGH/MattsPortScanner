@@ -1,4 +1,15 @@
-#define ARP_RQ_PSIZE 42         // ARP request packet size
+#include "constants.h"
+
+// ARP request packet size
+#define ARP_RQ_PSIZE 42         
+
+// Construct the ARP payload
+struct arp_payload {
+    unsigned char src_mac[MAC_LEN];
+    unsigned char src_ip[IP_LEN];
+    unsigned char tar_mac[MAC_LEN];
+    unsigned char tar_ip[IP_LEN];
+};
 
 /*
  * Function: make_arp_packet
@@ -78,3 +89,21 @@ char * search_arp_table(const char *ip_address);
 unsigned char * get_mac_add_from_ip(const unsigned char *tar_ip, int sock_raw, 
         const unsigned char *src_mac, const unsigned char *src_ip, 
         int dev_index, const char* dev_name);
+
+/*
+ * Function: listen_for_arp_response
+ * ---------------------------------
+ * Listens for a ARP reply (op-code 2) for the target IP address.
+ * NOTE: Function will timeout after 7 seconds.
+ * 
+ * loc_mac: The local MAC address in array format.
+ * 
+ * loc_ip: The local IP address in array format.
+ * 
+ * tar_ip: The target IP address in array format.
+ * 
+ * return: Returns the target MAC address on success or NULL on failure or 
+ *         error.
+ */
+unsigned char * listen_for_arp_response(const unsigned char *loc_mac, 
+        const unsigned char *loc_ip, const unsigned char *tar_ip);
