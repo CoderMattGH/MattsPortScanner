@@ -26,6 +26,7 @@
 #include "my_includes/packet_service.h"
 #include "my_includes/arp_service.h"
 #include "my_includes/process_service.h"
+#include "my_includes/icmp_service.h"
 #include "my_includes/constants.h"
 
 struct in_addr * get_gw_ip_address(char *dev_name);
@@ -123,14 +124,13 @@ int main(int argc, char *argv[]) {
     printf("Local MAC address:          %s\n", get_mac_str(loc_mac_add));
     printf("Local IP address:           %s\n\n", get_ip_str(loc_ip_add));
 
-    unsigned char *packet = construct_icmp_packet(get_ip_str(loc_ip_add), 
-            get_ip_str(dest_ip), loc_mac_add, mac_dest);
-
-    int send_len = send_packet(packet, 64, sock_raw, loc_int_index, 
-            loc_mac_add);
-
-    if (send_len < 0) {
-        fprintf(stderr, "ERROR: problem sending packet!\n");
+    // Send ICMP packet
+    int icmp_ret_val = send_icmp_request(get_ip_str(loc_ip_add), 
+            get_ip_str(dest_ip), loc_mac_add, mac_dest, sock_raw, 
+            loc_int_index);
+    
+    if (icmp_ret_val < 0) {
+        fprintf(stderr, "ERROR: Could not send ICMP packet!\n");
 
         return -1;
     }
