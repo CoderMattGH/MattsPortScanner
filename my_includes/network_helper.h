@@ -147,3 +147,31 @@ unsigned char * get_ip_32_arr(unsigned int ip_add);
  * return: An IP address string.
  */
 char * get_ip_32_str(unsigned int ip_add);
+
+/*
+ * Function: compare_ip_add
+ * ------------------------
+ * Compares 2 IP addresses.
+ * 
+ * ip_add_a: IP address A represented as a array.
+ * 
+ * ip_add_b: IP address B represented as a array.
+ * 
+ * return: 0 if the two addresses are equal, or -1 if not equal.
+ */
+char * compare_ip_add(const unsigned char *ip_add_a, 
+        const unsigned char *ip_add_b);
+
+/*
+ * Function: compare_mac_add
+ * -------------------------
+ * Compares 2 MAC addresses.
+ * 
+ * mac_add_a: MAC address A represented as a array.
+ * 
+ * mac_add_b: MAC address B represented as a array.
+ * 
+ * return: 0 if the two addresses are equal, or -1 if not equal.
+ */
+char * compare_mac_add(const unsigned char *mac_add_a,
+        const unsigned char *mac_add_b);
