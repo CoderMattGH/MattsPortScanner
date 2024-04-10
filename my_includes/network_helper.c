@@ -11,10 +11,6 @@
 #include "process_service.h"
 #include "constants.h"
 
-#ifndef DEBUG
-    #define DEBUG 0
-#endif
-
 int get_interface_index(const int *sock, const char *dev_name) {
     struct ifreq *ifreq_i = get_ifreq_struct(dev_name);
 
