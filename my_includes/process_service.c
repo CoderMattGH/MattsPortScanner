@@ -6,13 +6,6 @@
 #include "process_service.h"
 #include "constants.h"
 
-/**
- * Loads a process from the path supplied and saves the output from the process
- * as a 2D char array.  Each line of output is a row in the array.
- * 
- * @path: The path to execute.
- * @return: A 2d char array, or NULL on error.
- */
 char ** load_process(const char* path) {
     if (DEBUG >= 2) {
         printf("Parsing output of process path: %s\n", path);
