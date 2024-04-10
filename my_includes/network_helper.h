@@ -124,3 +124,26 @@ unsigned char * get_ip_arr_rep(const struct in_addr *ip_add);
  * return: An IP address or NULL on error.
  */
 struct in_addr * get_gw_ip_address(const char *dev_name);
+
+/*
+ * Function: get_ip_32_str
+ * -----------------------
+ * Converts an IP address represented as a 32 bit unsigned int into an array
+ * representation.
+ * 
+ * ip_add: IP address.
+ * 
+ * return: An IP address represented as an array.
+ */
+unsigned char * get_ip_32_arr(unsigned int ip_add);
+
+/*
+ * Function: get_ip_32_str
+ * -----------------------
+ * Converts an IP address represented as a 32 bit unsigned int into a string.
+ * 
+ * ip_add: IP address.
+ * 
+ * return: An IP address string.
+ */
+char * get_ip_32_str(unsigned int ip_add);

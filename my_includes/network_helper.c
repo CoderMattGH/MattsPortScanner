@@ -216,3 +216,20 @@ struct in_addr * get_gw_ip_address(const char *dev_name) {
 
     return NULL;
 }
+
+unsigned char * get_ip_32_arr(unsigned int ip_add) {
+    unsigned char *ip_arr = malloc(sizeof(char) * IP_LEN);
+    memset(ip_arr, 0, sizeof(char) * IP_LEN);
+
+    for (int i = 0; i < IP_LEN; i++) {
+        ip_arr[i] = ((unsigned char *)&(ip_add))[i];
+    }
+
+    return ip_arr;
+}
+
+char * get_ip_32_str(unsigned int ip_add) {
+    char *ip_str = get_ip_arr_str(get_ip_32_arr(ip_add));
+
+    return ip_str;
+}
