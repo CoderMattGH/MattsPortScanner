@@ -105,10 +105,13 @@ int main(int argc, char *argv[]) {
             loc_mac_add, get_ip_arr_rep(loc_ip_add), loc_int_index, dev_name);
 
     if (mac_dest == NULL) {
-        fprintf(stderr, "ERROR: Cannot get MAC address of destination IP.\n");
+        fprintf(stderr, "ERROR: Cannot get MAC address of destination IP!\n");
+
+        return -1;
     }
 
     // Verbose tag
+    printf("\n");
     printf("Information\n");
     printf("-----------\n\n");
     printf("Destination IP:             %s\n", get_ip_str(dest_ip));
@@ -134,8 +137,9 @@ int main(int argc, char *argv[]) {
 
     close(sock_raw);
 
-    printf("Socket closed!\n");
-    printf("Exiting!\n");
+    if (DEBUG >= 2) {
+        printf("Exiting!\n");
+    }
 
     return 0;
 }
@@ -148,7 +152,7 @@ int main(int argc, char *argv[]) {
  */
 struct in_addr * get_gw_ip_address(char *dev_name) {
     if (DEBUG >= 2) {
-        printf("Trying to find IP address of default gateway!\n");
+        printf("Trying to find IP address of default gateway\n");
     }
 
     const char* path = "route -n | grep ";
@@ -176,7 +180,7 @@ struct in_addr * get_gw_ip_address(char *dev_name) {
         for (int j = 0; token != NULL; j++) {
             if(strcmp("0.0.0.0", token) == 0) {
                 if (DEBUG >= 2) {
-                    printf("Default gateway row identified!\n");
+                    printf("Default gateway row identified\n");
                 }
 
                 // Next token should be default gateway IP address
@@ -243,7 +247,7 @@ char * search_arp_table(char *ip_address) {
     // Read first line of output
     if (strstr(output[0], "no match found") != NULL) {
         if (DEBUG >= 2) {
-            printf("No ARP entry found!\n");
+            printf("No ARP entry found\n");
         }
 
         free(output);
@@ -323,7 +327,7 @@ unsigned char * get_mac_add_from_ip(unsigned char *tar_ip, int sock_raw,
         if (DEBUG >= 2) {
             printf("Cannot get ARP entry for IP address: %s\n", 
                     get_ip_arr_str(tar_ip));
-            printf("Obtaining default gateway MAC address!\n");
+            printf("Obtaining default gateway MAC address\n");
         }
 
         struct in_addr *gw_ip_add = get_gw_ip_address(dev_name);
@@ -341,11 +345,11 @@ unsigned char * get_mac_add_from_ip(unsigned char *tar_ip, int sock_raw,
         }
 
         if (DEBUG >= 2) {
-            printf("Default gateway MAC address obtained!\n");
+            printf("Default gateway MAC address obtained\n");
         }
     } else {
         if (DEBUG >= 2) {
-            printf("Successfully obtained MAC address from ARP table!\n");
+            printf("Successfully obtained MAC address from ARP table\n");
         }
 
         mac_dest = get_mac_from_str(mac_str);

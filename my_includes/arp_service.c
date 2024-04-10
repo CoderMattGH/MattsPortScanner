@@ -16,14 +16,20 @@
 
 #include "arp_service.h"
 #include "packet_service.h"
+#include "network_helper.h"
 #include "constants.h"
 
 /*
- * Constructs an ARP packet with the supplied parameters.
+ * Constructs an ARP request packet with the supplied parameters.
  */
 unsigned char * make_arp_packet(unsigned char *src_mac, unsigned char *dst_mac, 
         unsigned char *src_ip, unsigned char *tar_ip) {
-    // Minimum size ethernet frame is 64
+    if (DEBUG >= 2) {
+        printf("Constructing ARP request packet for IP: %s\n",
+                get_ip_arr_str(tar_ip));
+    }
+
+    // 64 byte packet size
     const int PACKET_SIZE = ARP_RQ_PSIZE * sizeof(char);
 
     int total_len = 0;
@@ -78,26 +84,42 @@ unsigned char * make_arp_packet(unsigned char *src_mac, unsigned char *dst_mac,
 
     total_len += sizeof(struct arp_payload);
 
-    printf("ARP packet TOTAL LEN: %d\n", total_len);
+    if (DEBUG >= 2) {
+        printf("Successfully constructed ARP packet with length: %d bytes\n", 
+                total_len);
+    }
 
     return sendbuff;
 }
 
 int send_arp_request(int sock_raw, unsigned char *src_mac, 
         unsigned char *src_ip, unsigned char *tar_ip, int dev_index) {
-    printf("Sending ARP request!\n");
+    if (DEBUG >= 2) {
+        printf("Sending ARP request for IP: %s\n", get_ip_arr_str(tar_ip));
+    }
 
     unsigned char brd_mac[] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
     unsigned char *arp_buff = make_arp_packet(src_mac, brd_mac, src_ip, tar_ip);
 
     if (arp_buff == NULL) {
+        free(arp_buff);
+
         return -1;
     }
 
     int snd_len = send_packet(arp_buff, ARP_RQ_PSIZE, sock_raw, dev_index, 
             src_mac);
     if (snd_len < 0)  {
+        free(arp_buff);
+
         return -1;
+    }
+
+    free(arp_buff);
+
+    if (DEBUG >= 2) {
+        printf("ARP request for IP: %s successfully sent\n", 
+                get_ip_arr_str(tar_ip));
     }
 
     return 0;

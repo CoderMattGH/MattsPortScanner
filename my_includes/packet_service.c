@@ -13,14 +13,12 @@
 #include <linux/if_packet.h>
 
 #include "packet_service.h"
+#include "network_helper.h"
 #include "constants.h"
-
-#ifndef DEBUG
-    #define DEBUG 0
-#endif
 
 unsigned short ip_checksum(unsigned short* start_of_header) {
     if (DEBUG >= 2) {
+        printf("\n");
         printf("IP Checksum\n");
         printf("-----------\n\n");
         printf("version,ihl,tos:        %d\n", start_of_header[0]);
@@ -49,7 +47,7 @@ unsigned short ip_checksum(unsigned short* start_of_header) {
     unsigned short result = ~((unsigned short)(sum & 0x0000FFFF));
 
     if (DEBUG >= 2) {
-        printf("IP header checksum: 0x%x\n\n", result);
+        printf("IP header checksum:     0x%x\n\n", result);
     }
 
     return result;
@@ -79,7 +77,7 @@ unsigned short icmp_checksum(unsigned short* start_of_header) {
     unsigned short result = ~((unsigned short)(sum & 0x0000FFFF));
 
     if (DEBUG >= 2) {
-        printf("ICMP header checksum: 0x%x\n\n", result);
+        printf("ICMP header checksum:   0x%x\n\n", result);
     }
 
     return result;
@@ -87,7 +85,11 @@ unsigned short icmp_checksum(unsigned short* start_of_header) {
 
 unsigned char * construct_icmp_packet(const char *src_ip, const char *dst_ip, 
         const unsigned char *src_mac, const unsigned char *dst_mac) {
-    // Minimum size ethernet frame is 64
+    if (DEBUG >= 2) {
+        printf("Constructing ICMP packet for destination IP: %s\n", dst_ip);
+    }
+
+    // 64 byte packet size
     const int PACKET_SIZE = 64 * sizeof(char);
 
     int total_len = 0;
@@ -99,7 +101,7 @@ unsigned char * construct_icmp_packet(const char *src_ip, const char *dst_ip,
     // Construct the ethernet header
     struct ethhdr *eth = (struct ethhdr *)(sendbuff);
 
-    for (int i = 0; i < 6; i++) {
+    for (int i = 0; i < MAC_LEN; i++) {
         eth->h_source[i] = src_mac[i];
         eth->h_dest[i] = dst_mac[i];
     }
@@ -145,6 +147,10 @@ unsigned char * construct_icmp_packet(const char *src_ip, const char *dst_ip,
     icmph->checksum = icmp_checksum((unsigned short *)
             (sendbuff + sizeof(struct ethhdr) + sizeof(struct iphdr)));
 
+    if (DEBUG >= 2) {
+        printf("ICMP packet successfully constructed!\n");
+    }
+
     return sendbuff;
 }  
 
@@ -168,7 +174,7 @@ int send_packet(unsigned char* packet, int packet_len, int socket,
     }
 
     if (DEBUG >= 1) {
-        printf("Packet successfully sent with length: %d bytes!\n\n", send_len);
+        printf("Packet successfully sent with length: %d bytes\n", send_len);
     }
 
     return send_len;
