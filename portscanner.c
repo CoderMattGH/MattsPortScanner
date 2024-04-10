@@ -129,6 +129,9 @@ int main(int argc, char *argv[]) {
 
     close(sock_raw);
 
+    listen_for_icmp_response(loc_mac_add, get_ip_arr_rep(loc_ip_add), 
+            get_ip_arr_rep(dest_ip));
+
     if (DEBUG >= 2) {
         printf("Exiting!\n");
     }
