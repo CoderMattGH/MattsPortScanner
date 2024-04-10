@@ -24,7 +24,7 @@ int send_icmp_request(const char* src_ip, const char* dst_ip,
             dst_mac);
     
     if (packet == NULL) {
-        return NULL;
+        return -1;
     }
     
     int send_len = send_packet(packet, ICMP_PACK_LENGTH, sock_raw, inter_index,
