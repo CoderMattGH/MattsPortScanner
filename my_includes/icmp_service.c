@@ -152,7 +152,7 @@ int listen_for_icmp_response(const unsigned char *loc_mac,
         // Get current time
         curr_time = time(0);        
 
-        // Receive a network packet and copy in to buffer (Non-blocking)
+        // Receive a network packet and copy into buffer (Non-blocking)
         int buff_len = recvfrom(icmp_sock_raw, buffer, PACKET_SIZE, MSG_DONTWAIT,
                 &saddr, (socklen_t *)&saddr_len);
 
@@ -174,7 +174,7 @@ int listen_for_icmp_response(const unsigned char *loc_mac,
         if (DEBUG >= 3) {
             printf("Packet received: ");
             printf("src_mac: %s", get_mac_str(eth->h_source));
-            printf("dst_ac: %s\n", get_mac_str(eth->h_dest));
+            printf("dst_mac: %s\n", get_mac_str(eth->h_dest));
         }
 
         // Check MAC source address matches local interface
@@ -209,8 +209,16 @@ int listen_for_icmp_response(const unsigned char *loc_mac,
             printf("Target ICMP request received\n");
         }
 
-        break;
+        close(icmp_sock_raw);
+
+        return 1;
+    }
+
+    if (DEBUG >= 2) {
+        printf("No ICMP packet was received\n");
     }
 
     close(icmp_sock_raw);
+
+    return 0;
 }
