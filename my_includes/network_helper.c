@@ -234,7 +234,7 @@ char * get_ip_32_str(unsigned int ip_add) {
     return ip_str;
 }
 
-char * compare_ip_add(const unsigned char *ip_add_a, 
+int compare_ip_add(const unsigned char *ip_add_a, 
         const unsigned char *ip_add_b) {
     int equal = 0;
     for (int i = 0; i < IP_LEN; i++) {
@@ -247,7 +247,7 @@ char * compare_ip_add(const unsigned char *ip_add_a,
     return equal;
 }
 
-char * compare_mac_add(const unsigned char *mac_add_a,
+int compare_mac_add(const unsigned char *mac_add_a,
         const unsigned char *mac_add_b) {
     int equal = 0;
     for (int i = 0; i < MAC_LEN; i++) {

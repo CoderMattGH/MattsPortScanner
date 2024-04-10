@@ -159,7 +159,7 @@ char * get_ip_32_str(unsigned int ip_add);
  * 
  * return: 0 if the two addresses are equal, or -1 if not equal.
  */
-char * compare_ip_add(const unsigned char *ip_add_a, 
+int compare_ip_add(const unsigned char *ip_add_a, 
         const unsigned char *ip_add_b);
 
 /*
@@ -173,5 +173,5 @@ char * compare_ip_add(const unsigned char *ip_add_a,
  * 
  * return: 0 if the two addresses are equal, or -1 if not equal.
  */
-char * compare_mac_add(const unsigned char *mac_add_a,
+int compare_mac_add(const unsigned char *mac_add_a,
         const unsigned char *mac_add_b);
