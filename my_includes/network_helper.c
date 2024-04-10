@@ -8,13 +8,14 @@
 #include <string.h>
 
 #include "network_helper.h"
+#include "process_service.h"
 #include "constants.h"
 
 #ifndef DEBUG
     #define DEBUG 0
 #endif
 
-int get_interface_index(int *sock, char *dev_name) {
+int get_interface_index(const int *sock, const char *dev_name) {
     struct ifreq *ifreq_i = get_ifreq_struct(dev_name);
 
     // On error
@@ -40,7 +41,7 @@ char * get_mac_str(const unsigned char* mac_add) {
     return str;
 }
 
-char * get_ip_str(struct in_addr *ip_add) {
+char * get_ip_str(const struct in_addr *ip_add) {
     const int STR_SIZE = INET_ADDRSTRLEN * sizeof(char);
     char *ip_str = malloc(STR_SIZE);
     memset(ip_str, 0, STR_SIZE);
@@ -52,7 +53,7 @@ char * get_ip_str(struct in_addr *ip_add) {
     return ip_str;
 }
 
-char * get_ip_arr_str(unsigned char *ip_add) {
+char * get_ip_arr_str(const unsigned char *ip_add) {
     const int STR_SIZE = INET_ADDRSTRLEN * sizeof(char);
     char *ip_str = malloc(STR_SIZE);
     memset(ip_str, 0, STR_SIZE);
@@ -62,7 +63,7 @@ char * get_ip_arr_str(unsigned char *ip_add) {
     return ip_str;
 }
 
-struct in_addr * get_ip_from_str(char *ip_str){
+struct in_addr * get_ip_from_str(const char *ip_str){
     struct in_addr *ip_add = malloc(sizeof(struct in_addr));
     memset(ip_add, 0, sizeof(struct in_addr));
 
@@ -73,7 +74,7 @@ struct in_addr * get_ip_from_str(char *ip_str){
     return ip_add;
 }
 
-unsigned char * get_mac_from_str(char *mac_str) {
+unsigned char * get_mac_from_str(const char *mac_str) {
     int *mac_add = malloc(sizeof(int) * MAC_LEN);
     memset(mac_add, 0, sizeof(int) * MAC_LEN);
 
@@ -92,7 +93,7 @@ unsigned char * get_mac_from_str(char *mac_str) {
     return mac_add_con;
 }
 
-unsigned char * get_mac_address(int *sock, char *dev_name) {
+unsigned char * get_mac_address(const int *sock, const char *dev_name) {
     struct ifreq *ifreq_c = get_ifreq_struct(dev_name);
 
     // On error
@@ -110,7 +111,7 @@ unsigned char * get_mac_address(int *sock, char *dev_name) {
     return mac_add;
 }
 
-struct in_addr * get_ip_address(int *sock, char *dev_name) {
+struct in_addr * get_ip_address(const int *sock, const char *dev_name) {
     struct ifreq *ifreq_ip = get_ifreq_struct(dev_name);
 
     // On error
@@ -128,7 +129,7 @@ struct in_addr * get_ip_address(int *sock, char *dev_name) {
     return ip_add;
 }
 
-struct ifreq * get_ifreq_struct(char *dev_name) {
+struct ifreq * get_ifreq_struct(const char *dev_name) {
     struct ifreq *structure = malloc(sizeof(struct ifreq));
     memset(structure, 0, sizeof(struct ifreq));
     strncpy(structure->ifr_name, dev_name, IFNAMSIZ - 1);
@@ -153,4 +154,69 @@ unsigned char * get_ip_arr_rep(const struct in_addr *ip_add) {
     }
 
     return ip_arr;
+}
+
+struct in_addr * get_gw_ip_address(const char *dev_name) {
+    if (DEBUG >= 2) {
+        printf("Trying to find IP address of default gateway\n");
+    }
+
+    const char* path = "route -n | grep ";
+
+    const int MAX_PATH_BUFF = 200;
+    char* path_buff = malloc(sizeof(char) * MAX_PATH_BUFF);
+    memset(path_buff, 0, sizeof(MAX_PATH_BUFF * sizeof(char)));
+    
+    strncpy(path_buff, path, 100);
+    strncat(path_buff, dev_name, 99);
+
+    char **output = load_process(path_buff);
+
+    free(path_buff);
+
+    if (output == NULL) {
+        return NULL;
+    }
+
+    char *token;
+    for (int i = 0; output[i] != NULL; i++) {
+        // Tokenise output to help parse
+        token = strtok(output[i], " ");
+
+        for (int j = 0; token != NULL; j++) {
+            if(strcmp("0.0.0.0", token) == 0) {
+                if (DEBUG >= 2) {
+                    printf("Default gateway row identified\n");
+                }
+
+                // Next token should be default gateway IP address
+                token = strtok(NULL, " ");
+                
+                // IP address not found
+                if (token == NULL) {
+                    return NULL;
+                }
+                
+                struct in_addr *ip_add = get_ip_from_str(token);
+
+                if (ip_add == NULL)
+                    return NULL;
+
+                if (DEBUG >= 2) {
+                    printf("Default gateway IP found: %s!\n", 
+                            get_ip_str(ip_add));
+                }
+
+                free(output);
+
+                return ip_add;
+            }     
+            
+            token = strtok(NULL, " ");
+        }
+    }
+
+    free(output);
+
+    return NULL;
 }
