@@ -1,10 +1,4 @@
 /*
- * Constructs and returns an empty ICMP packet with no data payload. 
- */
-unsigned char * construct_icmp_packet(const char *src_ip, const char *dst_ip, 
-        const unsigned char *src_mac, const unsigned char *dst_mac);
-
-/*
  * Calculates the IP header checksum and returns the result.
  * Checksum is the 16 bit ones complement of the sum of all 16 bit words in the
  * IP header.
