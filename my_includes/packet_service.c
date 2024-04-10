@@ -16,7 +16,7 @@
 #include "network_helper.h"
 #include "constants.h"
 
-unsigned short ip_checksum(unsigned short* start_of_header) {
+unsigned short ip_checksum(const unsigned short* start_of_header) {
     if (DEBUG >= 2) {
         printf("\n");
         printf("IP Checksum\n");
@@ -53,7 +53,7 @@ unsigned short ip_checksum(unsigned short* start_of_header) {
     return result;
 }
 
-unsigned short icmp_checksum(unsigned short* start_of_header) {
+unsigned short icmp_checksum(const unsigned short* start_of_header) {
     const int NUM_16_WORDS = 4;
     
     if (DEBUG >= 2) {
