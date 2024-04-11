@@ -65,12 +65,12 @@ int ping_target(const unsigned char* src_ip, const unsigned char* dst_ip,
     int icmp_res_val = listen_for_icmp_response(src_mac, src_ip, dst_ip);
 
     // If timeout occurred
-    if (icmp_req_val == 0) {
+    if (icmp_res_val == 0) {
         return 0;
     }
 
     // If an error occurred
-    if (icmp_req_val == -1) {
+    if (icmp_res_val == -1) {
         return -1;
     }
 

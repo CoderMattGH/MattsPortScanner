@@ -235,8 +235,6 @@ unsigned char * get_mac_add_from_ip(const unsigned char *tar_ip, int sock_raw,
         if (DEBUG >= 2) {
             printf("Default gateway MAC address obtained\n");
         }
-
-        printf("TEMPMAC: %x:%x:%x\n", mac_dest[0], mac_dest[1], mac_dest[2]);
     } else {
         if (DEBUG >= 2) {
             printf("Successfully obtained MAC address\n");
