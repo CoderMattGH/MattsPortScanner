@@ -229,7 +229,7 @@ int * scan_ports(struct in_addr *tar_ip, int start_port, int end_port) {
                 }
             } 
 
-            if (DEBUG >= 2) {
+            if (DEBUG >= 3) {
                 printf("Open port detected: %d\n", curr_port);
             }
 
@@ -264,7 +264,7 @@ int * scan_ports_raw(const unsigned char *src_ip, const unsigned char *tar_ip,
     int open_ports[MAX_PORT + 1] = {0};
 
     for (int curr_port = start_port; curr_port <= end_port; curr_port++) {
-        // WAY TO CHECK THAT PORT IS NOT IN USE?
+        // TODO: Randomise port
         int src_port = 8000;
 
         // Non-blocking socket
@@ -277,18 +277,8 @@ int * scan_ports_raw(const unsigned char *src_ip, const unsigned char *tar_ip,
         // Construct the TCP SYN packet
         unsigned char* packet = construct_syn_packet(get_ip_arr_str(src_ip), 
                 get_ip_arr_str(tar_ip), src_mac, tar_mac, src_port, curr_port);
-
-        // Send packet
-        struct sockaddr_ll sadr_ll;
-        sadr_ll.sll_ifindex = inter_index;
-        sadr_ll.sll_halen = ETH_ALEN;
         
-        for (int i = 0; i < MAC_LEN; i++) {
-            sadr_ll.sll_addr[i] = tar_mac[i];
-        }
-
-        int send_len = sendto(sock_raw, packet, 64, 0, 
-                (const struct sockaddr *)&sadr_ll, sizeof(struct sockaddr_ll));
+        int send_len = send_packet(packet, 64, sock_raw, inter_index, src_mac);
 
         if (send_len < 0) {
             fprintf(stderr, "ERROR: Problem sending SYN packet!");
@@ -296,7 +286,7 @@ int * scan_ports_raw(const unsigned char *src_ip, const unsigned char *tar_ip,
             return NULL;
         }
 
-        if (DEBUG >= 2) {
+        if (DEBUG >= 3) {
             printf("Successfully sent SYN packet to %s:%d\n", 
                     get_ip_arr_str(tar_ip), curr_port);
         }
@@ -357,7 +347,7 @@ int * scan_ports_raw(const unsigned char *src_ip, const unsigned char *tar_ip,
 unsigned char * construct_syn_packet(const char *src_ip, const char *dst_ip, 
         const unsigned char *src_mac, const unsigned char *dst_mac, 
         unsigned short int src_port, unsigned short int dst_port) {
-    if (DEBUG >= 2) {
+    if (DEBUG >= 3) {
         printf("Constructing SYN TCP/IP packet for destination IP: %s\n",
                 get_ip_arr_str(dst_ip));
     }

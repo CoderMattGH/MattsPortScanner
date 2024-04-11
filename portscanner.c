@@ -136,11 +136,13 @@ int main(int argc, char *argv[]) {
             }
             
             // If host is up, commence port scan
-            //scan_ports(dest_ip, 1, MAX_PORT);
-            scan_ports_multi(dest_ip, 1, MAX_PORT);
+            // scan_ports_multi(dest_ip, 1, MAX_PORT);
+            scan_ports_raw_multi(get_ip_arr_rep(loc_ip_add), 
+                    get_ip_arr_rep(dest_ip), loc_mac_add, mac_dest, 1, MAX_PORT,
+                    loc_int_index);
 
             break;
-        // ICMP
+        // ICMP reply not received
         case(0):
             if (DEBUG >= 2) {
                 printf("Target IP (%s) is down or not responding to ping " 

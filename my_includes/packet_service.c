@@ -17,7 +17,7 @@
 #include "constants.h"
 
 unsigned short ip_checksum(const unsigned short* start_of_header) {
-    if (DEBUG >= 2) {
+    if (DEBUG >= 3) {
         printf("\n");
         printf("IP Checksum\n");
         printf("-----------\n\n");
@@ -46,7 +46,7 @@ unsigned short ip_checksum(const unsigned short* start_of_header) {
 
     unsigned short result = ~((unsigned short)(sum & 0x0000FFFF));
 
-    if (DEBUG >= 2) {
+    if (DEBUG >= 3) {
         printf("IP header checksum:     0x%x\n\n", result);
     }
 
@@ -55,11 +55,11 @@ unsigned short ip_checksum(const unsigned short* start_of_header) {
 
 unsigned short tcp_checksum(const unsigned short* start_of_header, 
         const unsigned short *start_of_pseudo_header) {
-    if (DEBUG >= 2) {
-        printf("Calculating TCP header checksum");
+    if (DEBUG >= 3) {
+        printf("Calculating TCP header checksum\n");
     }
 
-    if (DEBUG >= 2) {
+    if (DEBUG >= 3) {
         printf("\n");
         printf("TCP Checksum\n");
         printf("------------\n\n");
@@ -76,7 +76,7 @@ unsigned short tcp_checksum(const unsigned short* start_of_header,
         printf("data:                   0\n\n");    // No data payload
     }
 
-    if (DEBUG >= 2) {
+    if (DEBUG >= 3) {
         printf("Pseudo Header\n");
         printf("-------------\n\n");
         printf("saddr(1):               %d\n", start_of_pseudo_header[0]);
@@ -113,8 +113,8 @@ unsigned short tcp_checksum(const unsigned short* start_of_header,
 
     unsigned short result = ~((unsigned short)(sum & 0X0000FFFF));
 
-    if (DEBUG >= 2) {
-        printf("Total TCP Checksum: %x\n", result);
+    if (DEBUG >= 3) {
+        printf("Total TCP Checksum:     0x%x\n\n", result);
     }
 
     return result;
@@ -169,7 +169,7 @@ int send_packet(const unsigned char *packet, int packet_len, int socket,
         return -1;
     }
 
-    if (DEBUG >= 1) {
+    if (DEBUG >= 3) {
         printf("Packet successfully sent with length: %d bytes\n", send_len);
     }
 
