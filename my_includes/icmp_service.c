@@ -164,6 +164,9 @@ int listen_for_icmp_response(const unsigned char *loc_mac,
                 continue;
             } else {
                 // An error occurred
+                close(icmp_sock_raw);
+                free(buffer);
+
                 return -1;
             }
         }
@@ -215,7 +218,7 @@ int listen_for_icmp_response(const unsigned char *loc_mac,
     }
 
     if (DEBUG >= 2) {
-        printf("No ICMP packet was received\n");
+        printf("Timeout occurred whilst waiting for ICMP response.\n");
     }
 
     close(icmp_sock_raw);

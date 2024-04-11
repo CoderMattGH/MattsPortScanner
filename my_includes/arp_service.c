@@ -14,6 +14,9 @@
 
 #include <net/if_arp.h>
 
+#include <errno.h>
+#include <time.h>
+
 #include "arp_service.h"
 #include "packet_service.h"
 #include "network_helper.h"
@@ -241,7 +244,6 @@ unsigned char * get_mac_add_from_ip(const unsigned char *tar_ip, int sock_raw,
     return mac_dest;
 }
 
-// TODO: Add timeout
 unsigned char * listen_for_arp_response(const unsigned char *loc_mac, 
         const unsigned char *loc_ip, const unsigned char *tar_ip) {
     if (DEBUG >= 2) {
@@ -263,13 +265,38 @@ unsigned char * listen_for_arp_response(const unsigned char *loc_mac,
     struct sockaddr saddr;
     int saddr_len = sizeof(struct sockaddr);
 
-    while (1) {
-        // Receive a network packet and copy it into buffer
-        int buff_len = recvfrom(arp_sock_raw, buffer, PACKET_SIZE, 0, &saddr,
-                (socklen_t *)&saddr_len);
+    // Sleep time in microseconds (currently 0.1 seconds)
+    const int SLEEP_TIME_MICS = 1000 * 1000 * 0.1;
+
+    // Timeout in seconds
+    const int TIMEOUT_SECS = 7;
+
+    long int start_time = time(0);
+    long int curr_time = time(0);
+    while ((curr_time - start_time) <= TIMEOUT_SECS) {
+        // Clear errno
+        errno = 0;
+
+        // Get current time
+        curr_time = time(0);
+
+        // Receive a network packet and copy it into buffer (Non-blocking)
+        int buff_len = recvfrom(arp_sock_raw, buffer, PACKET_SIZE, MSG_DONTWAIT, 
+                &saddr, (socklen_t *)&saddr_len);
         
-        if (buff_len < 0) {
-            return NULL;
+        if (buff_len == -1) {
+            // Would block
+            if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                usleep(SLEEP_TIME_MICS);
+
+                continue;
+            } else {
+                // An error occurred
+                close(arp_sock_raw);
+                free(buffer);
+
+                return NULL;
+            }
         }
 
         // Extract ethernet header
@@ -309,31 +336,39 @@ unsigned char * listen_for_arp_response(const unsigned char *loc_mac,
         // Check that payload contains target MAC address
         if ((compare_ip_add(tar_ip, arppl->src_ip) != 0) || 
                 (compare_ip_add(loc_ip, arppl->tar_ip) != 0) ||
-                (compare_mac_add(loc_mac, arppl->tar_mac) != 0))
-            {
-                continue;
-            }
-        
-            if (DEBUG >= 2) {
-                printf("Correct ARP reply verified.\n");
-            }
+                (compare_mac_add(loc_mac, arppl->tar_mac) != 0)) {
+            continue;
+        }
+    
+        if (DEBUG >= 2) {
+            printf("Correct ARP reply verified.\n");
+        }
 
-            close(arp_sock_raw);
+        close(arp_sock_raw);
 
-            // Copy MAC address of target to new buffer
-            unsigned char *mac_tar = malloc(sizeof(char) * MAC_LEN);
-            memset(mac_tar, 0, sizeof(char) * MAC_LEN);
+        // Copy MAC address of target to new buffer
+        unsigned char *mac_tar = malloc(sizeof(char) * MAC_LEN);
+        memset(mac_tar, 0, sizeof(char) * MAC_LEN);
 
-            for (int i = 0; i < MAC_LEN; i++) {
-                mac_tar[i] = arppl->src_mac[i];
-            }
+        for (int i = 0; i < MAC_LEN; i++) {
+            mac_tar[i] = arppl->src_mac[i];
+        }
 
-            free(buffer);
+        free(buffer);
 
-            if (DEBUG >= 2) {
-                printf("Target MAC address: %s\n", get_mac_str(mac_tar));
-            }
+        if (DEBUG >= 2) {
+            printf("Target MAC address: %s\n", get_mac_str(mac_tar));
+        }
 
-            return mac_tar;
+        return mac_tar;
     }
+
+    close(arp_sock_raw);
+    free (buffer);
+
+    if (DEBUG >= 2) {
+        printf("Timeout occurred whilst waiting for ARP reply.\n");
+    }
+
+    return NULL;
 }
