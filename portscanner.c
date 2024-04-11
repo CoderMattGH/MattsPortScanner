@@ -73,6 +73,7 @@ int main(int argc, char *argv[]) {
     loc_int_index = get_interface_index(&sock_raw, dev_name);
     if (loc_int_index == -1) {
         fprintf(stderr, "ERROR: Cannot get interface index.\n");
+        close(sock_raw);
 
         return -1;
     }
@@ -81,6 +82,7 @@ int main(int argc, char *argv[]) {
     loc_mac_add = get_mac_address(&sock_raw, dev_name);
     if (loc_mac_add == NULL) {
         fprintf(stderr, "ERROR: Cannot get MAC address.\n");
+        close(sock_raw);
 
         return -1;
     }
@@ -89,6 +91,7 @@ int main(int argc, char *argv[]) {
     loc_ip_add = get_ip_address(&sock_raw, dev_name);
     if (loc_ip_add == NULL) {
         fprintf(stderr, "ERROR: Cannot get IP address.\n");
+        close(sock_raw);
 
         return -1;
     }
@@ -99,6 +102,7 @@ int main(int argc, char *argv[]) {
 
     if (mac_dest == NULL) {
         fprintf(stderr, "ERROR: Cannot get MAC address of destination IP!\n");
+        close(sock_raw);
 
         return -1;
     }
@@ -116,19 +120,36 @@ int main(int argc, char *argv[]) {
     printf("Local MAC address:          %s\n", get_mac_str(loc_mac_add));
     printf("Local IP address:           %s\n\n", get_ip_str(loc_ip_add));
 
-    // Send ICMP packet
-    int icmp_ret_val = send_icmp_request(get_ip_str(loc_ip_add), 
-            get_ip_str(dest_ip), loc_mac_add, mac_dest, sock_raw, 
+    // Ping target
+    int ping_ret_val = ping_target(get_ip_arr_rep(loc_ip_add), 
+            get_ip_arr_rep(dest_ip), loc_mac_add, mac_dest, sock_raw, 
             loc_int_index);
-    
-    if (icmp_ret_val < 0) {
-        fprintf(stderr, "ERROR: Could not send ICMP packet!\n");
 
-        return -1;
+    switch(ping_ret_val) {
+        // ICMP reply received
+        case(1):
+            if (DEBUG >= 2) {
+                printf("Target IP (%s) is up.\n", get_ip_str(dest_ip));
+            }
+
+            break;
+        // ICMP
+        case(0):
+            if (DEBUG >= 2) {
+                printf("Target IP (%s) is down or not responding to ping " 
+                        "requests\n", get_ip_str(dest_ip));
+            }
+
+            break;
+        // An error occurred
+        case(-1):
+        default:
+            fprintf(stderr, 
+                    "ERROR: An unknown error occurred with the ICMP request\n");
+            close(sock_raw);
+
+            return -1;
     }
-
-    listen_for_icmp_response(loc_mac_add, get_ip_arr_rep(loc_ip_add), 
-            get_ip_arr_rep(dest_ip));
 
     if (DEBUG >= 2) {
         printf("Exiting!\n");

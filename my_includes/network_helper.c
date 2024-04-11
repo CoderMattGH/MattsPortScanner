@@ -70,6 +70,13 @@ struct in_addr * get_ip_from_str(const char *ip_str){
     return ip_add;
 }
 
+unsigned char * get_ip_arr_from_str(const char *ip_str) {
+    struct in_addr *ip_add = get_ip_from_str(ip_str);
+    unsigned char* ip_add_arr = get_ip_arr_rep(ip_add);
+
+    return ip_add_arr;
+}
+
 unsigned char * get_mac_from_str(const char *mac_str) {
     int *mac_add = malloc(sizeof(int) * MAC_LEN);
     memset(mac_add, 0, sizeof(int) * MAC_LEN);

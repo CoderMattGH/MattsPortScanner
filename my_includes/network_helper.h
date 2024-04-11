@@ -43,6 +43,17 @@ char * get_ip_arr_str(const unsigned char *ip_add);
 struct in_addr * get_ip_from_str(const char *ip_str);
 
 /*
+ * Function: get_ip_arr_from_str
+ * -----------------------------
+ * Converts an IP string to an IP array.
+ * 
+ * ip_str: An IP address represented as a string.
+ * 
+ * return: Returns an IP address in array format.
+ */
+unsigned char * get_ip_arr_from_str(const char *ip_str);
+
+/*
  * Function: get_mac_from_str
  * --------------------------
  * Converts a MAC address string to a MAC address array.

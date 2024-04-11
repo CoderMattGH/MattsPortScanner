@@ -46,6 +46,37 @@ int send_icmp_request(const char* src_ip, const char* dst_ip,
     return 0;
 }
 
+int ping_target(const unsigned char* src_ip, const unsigned char* dst_ip, 
+        const unsigned char *src_mac, const unsigned char *dst_mac, 
+        int sock_raw, int inter_index) {
+    if (DEBUG >= 2) {
+        printf("Pinging target IP: %s\n", get_ip_arr_str(dst_ip));
+    }
+
+    // Construct and send ICMP packet
+    int icmp_req_val = send_icmp_request(get_ip_arr_str(src_ip), 
+            get_ip_arr_str(dst_ip), src_mac, dst_mac, sock_raw, inter_index);
+    
+    if (icmp_req_val < 0) {
+        return -1;
+    }
+    
+    // Wait for ICMP reply
+    int icmp_res_val = listen_for_icmp_response(src_mac, src_ip, dst_ip);
+
+    // If timeout occurred
+    if (icmp_req_val == 0) {
+        return 0;
+    }
+
+    // If an error occurred
+    if (icmp_req_val == -1) {
+        return -1;
+    }
+
+    return 1;
+}
+
 unsigned char * construct_icmp_packet(const char *src_ip, const char *dst_ip, 
         const unsigned char *src_mac, const unsigned char *dst_mac) {
     if (DEBUG >= 2) {

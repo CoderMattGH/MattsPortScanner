@@ -24,6 +24,31 @@ int send_icmp_request(const char* src_ip, const char* dst_ip,
         int sock_raw, int inter_index);
 
 /*
+ * Function: ping_target
+ * ---------------------
+ * Sends an ICMP packet to the target IP address and waits for a reply.
+ * NOTE: Timeout occurs after 7 seconds.
+ * 
+ * src_ip: Source IP address in array representation.
+ * 
+ * dst_ip: The target IP address in array representation.
+ * 
+ * src_mac: The source MAC address in array representation.
+ * 
+ * dst_mac: The destination MAC address in array representation.
+ * 
+ * sock_raw: The raw socket descriptor.
+ * 
+ * inter_index: The network interface index.
+ * 
+ * return: 1 indicates reply was received, 0 indicates reply timed out, -1
+ *         indicates an error occurred.
+ */
+int ping_target(const unsigned char* src_ip, const unsigned char* dst_ip, 
+        const unsigned char *src_mac, const unsigned char *dst_mac, 
+        int sock_raw, int inter_index);
+
+/*
  * Function: construct_icmp_packet
  * -------------------------------
  * Constructs an ICMP packet
