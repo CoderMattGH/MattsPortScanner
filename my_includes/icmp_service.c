@@ -88,7 +88,7 @@ unsigned char * construct_icmp_packet(const char *src_ip, const char *dst_ip,
     int total_len = 0;
 
     unsigned char *sendbuff;
-    sendbuff = (unsigned char*)malloc(PACKET_SIZE);
+    sendbuff = (unsigned char*)malloc(PACKET_SIZE * sizeof(char));
     memset(sendbuff, 0, PACKET_SIZE);
 
     // Construct the ethernet header

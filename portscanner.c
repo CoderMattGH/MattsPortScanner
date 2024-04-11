@@ -29,9 +29,8 @@
 #include "my_includes/arp_service.h"
 #include "my_includes/process_service.h"
 #include "my_includes/icmp_service.h"
+#include "my_includes/scanning_service.h"
 #include "my_includes/constants.h"
-
-int * scan_ports(struct in_addr *tar_ip, int start_port, int end_port);
 
 int main(int argc, char *argv[]) {
     if (argc < 3) {
@@ -137,7 +136,8 @@ int main(int argc, char *argv[]) {
             }
             
             // If host is up, commence port scan
-            scan_ports(dest_ip, 1, MAX_PORT);
+            //scan_ports(dest_ip, 1, MAX_PORT);
+            scan_ports_multi(dest_ip, 1, MAX_PORT);
 
             break;
         // ICMP
@@ -165,81 +165,4 @@ int main(int argc, char *argv[]) {
     close(sock_raw);
 
     return 0;
-}
-
-// TODO: Multithreaded
-int * scan_ports(struct in_addr *tar_ip, int start_port, int end_port) {
-    if (DEBUG >= 2) {
-        printf("Scanning host: %s\n", get_ip_str(tar_ip));
-    }
-
-    struct sockaddr_in serv_addr;
-    struct hostent* server;
-    int sockfd;
-
-    serv_addr.sin_family = AF_INET;
-    serv_addr.sin_addr = *tar_ip;
-
-    // Initialise to all zeros.
-    int open_ports[MAX_PORT + 1] = {0};
-
-    for (int curr_port = start_port; curr_port <= MAX_PORT; curr_port++) {
-        // Non-blocking socket
-        sockfd = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0);
-
-        if (sockfd < 0) {
-            return NULL;
-        }
-
-        // Change the port number
-        serv_addr.sin_port = htons(curr_port);
-
-        // Timeout in seconds
-        const int TIMEOUT_SECS = 7;
-
-        // Sleep time in milliseconds
-        const int SLEEP_TIME_MILS = 1000 * 1000 * 0.001;
-
-        long int start_time = time(0);
-        long int curr_time = time(0);
-
-        // Spin on non-blocking connect
-        while ((curr_time - start_time) <= TIMEOUT_SECS) {
-            // Get current time
-            curr_time = time(0);
-
-            // Reset errno
-            errno = 0;
-
-            // Try to connect
-            int conn_val = connect(sockfd, (struct sockaddr *)&serv_addr, 
-                    sizeof(serv_addr));
-            
-            if (conn_val < 0) {
-                if (errno == EAGAIN || errno == EALREADY 
-                        || errno == EINPROGRESS) {
-
-                    // sleep for 0.1 seconds
-                    usleep(SLEEP_TIME_MILS);
-
-                    continue;
-                }
-                else {
-                    close(sockfd);
-
-                    break;
-                }
-            } 
-
-            if (DEBUG >= 2) {
-                printf("Open port detected: %d\n", curr_port);
-            }
-
-            open_ports[curr_port] = 1;
-        }
-
-        close(sockfd);
-
-        usleep(1);
-    }
 }
