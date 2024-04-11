@@ -106,6 +106,7 @@ int * scan_ports_raw_multi(const unsigned char *src_ip,
         printf("Creating %d threads to scan in chunks of %d ports\n", 
                 MAX_THREADS, port_chunk);
     }
+
     for (int i = 0; i < MAX_THREADS; i++) {
         struct scan_raw_port_args *args = 
                 malloc(sizeof(struct scan_raw_port_args));
@@ -126,6 +127,8 @@ int * scan_ports_raw_multi(const unsigned char *src_ip,
 
         pthread_create(&tid[i], NULL, scan_ports_raw_proxy, (void *)args);
     }
+
+    listen_for_ACK_replies(tar_ip, src_mac);
 
     for (int i = 0; i < MAX_THREADS; i++) {
         pthread_join(tid[i], NULL);
@@ -260,8 +263,8 @@ int * scan_ports_raw(const unsigned char *src_ip, const unsigned char *tar_ip,
 
     int sock_raw;
 
-    // Initialise to all zeros.
-    int open_ports[MAX_PORT + 1] = {0};
+    // Sleep time inbetween sending packets in microseconds
+    const int SLEEP_TIME_MICS = 1000 * 1000 * 0.00001;
 
     for (int curr_port = start_port; curr_port <= end_port; curr_port++) {
         // TODO: Randomise port
@@ -280,6 +283,9 @@ int * scan_ports_raw(const unsigned char *src_ip, const unsigned char *tar_ip,
         
         int send_len = send_packet(packet, 64, sock_raw, inter_index, src_mac);
 
+        free(packet);
+        close(sock_raw);
+
         if (send_len < 0) {
             fprintf(stderr, "ERROR: Problem sending SYN packet!");
             
@@ -291,57 +297,85 @@ int * scan_ports_raw(const unsigned char *src_ip, const unsigned char *tar_ip,
                     get_ip_arr_str(tar_ip), curr_port);
         }
 
-        close(sock_raw);
-        
-        // Timeout in seconds
-        const int TIMEOUT_SECS = 7;
-
-        // Sleep time in milliseconds
-        const int SLEEP_TIME_MILS = 1000 * 1000 * 0.001;
-
-        long int start_time = time(0);
-        long int curr_time = time(0);
-
-        /*
-        // Spin on non-blocking connect
-        while ((curr_time - start_time) <= TIMEOUT_SECS) {
-            // Get current time
-            curr_time = time(0);
-
-            // Reset errno
-            errno = 0;
-
-            // Try to connect
-            int conn_val = connect(sock_raw, (struct sockaddr *)&serv_addr, 
-                    sizeof(serv_addr));
-            
-            if (conn_val < 0) {
-                if (errno == EAGAIN || errno == EALREADY 
-                        || errno == EINPROGRESS) {
-
-                    // sleep for 0.1 seconds
-                    usleep(SLEEP_TIME_MILS);
-
-                    continue;
-                }
-                else {
-
-                    break;
-                }
-            } 
-
-            if (DEBUG >= 2) {
-                printf("Open port detected: %d\n", curr_port);
-            }
-
-            open_ports[curr_port] = 1;
-        }
-        */
-
-        usleep(1);
+        usleep(SLEEP_TIME_MICS);
     }
 
     return NULL;
+}
+
+void listen_for_ACK_replies(const unsigned char* tar_ip, 
+        const unsigned char* src_mac) {
+    if (DEBUG >= 2) {
+        printf("Listening to ACK replies\n");
+    }
+
+    //int sock_listen_raw = socket(AF_PACKET, SOCK_RAW, htons(ETH_P_IP));
+    int sock_listen_raw = socket(AF_PACKET, SOCK_RAW, htons(ETH_P_ALL));
+
+    if (sock_listen_raw < 0) {
+        fprintf(stderr, "ERROR: Cannot open raw socket!\n");
+        printf("ERRNO: %d\n", errno);
+
+        return;
+    }
+
+    // Receive a network packet and copy it in to buffer.
+    const int MAX_R_BUFF_SZ = 65535;
+
+    unsigned char *rec_buff = malloc(sizeof(char) * MAX_R_BUFF_SZ);
+
+    struct sockaddr saddr;
+    int saddr_len = sizeof(struct sockaddr);
+
+    while (1) {
+        // Reset buffer
+        memset(rec_buff, 0, MAX_R_BUFF_SZ);
+
+        int buf_len = recvfrom(sock_listen_raw, rec_buff, MAX_R_BUFF_SZ, 0, 
+                &saddr, (socklen_t *)&saddr_len);
+
+        // Extract ethernet header
+        struct ethhdr *eth = (struct ethhdr *)(rec_buff);
+
+        unsigned char rec_mac_des[MAC_LEN];
+        for (int i = 0; i < MAC_LEN; i++) {
+            rec_mac_des[i] = eth->h_dest[i];
+        }
+
+        // Packet was not addressed to this interface
+        if (compare_mac_add(rec_mac_des, src_mac) != 0) {
+            continue;
+        }
+        
+        // Extract IP header
+        struct iphdr *iph = (struct iphdr *)
+                (rec_buff + sizeof(struct ethhdr));
+
+        if (DEBUG >= 3) {
+            printf("IP packet received: ");
+            printf("src: %s ", get_ip_32_str(iph->saddr));
+            printf("proto: %d\n", iph->protocol);
+        }
+
+        // Packet was not from target IP address and was not TCP
+        if ((compare_ip_add(get_ip_32_arr(iph->saddr), tar_ip) != 0) ||
+                (iph->protocol != 6)) {
+            continue;
+        }
+
+        // Extract TCP header
+        struct tcphdr *th = (struct tcphdr *)(rec_buff + 
+                sizeof(struct ethhdr) + sizeof(struct iphdr));
+
+        // Check that packet was an ACK with no RESET flag
+        if ((th->ack != 1) || th->rst == 1) {
+            continue;
+        }
+
+        if (DEBUG >= 2) {
+            printf("Open port: %d\n", htons(th->source));
+        }
+    }
 }
 
 unsigned char * construct_syn_packet(const char *src_ip, const char *dst_ip, 
@@ -381,7 +415,7 @@ unsigned char * construct_syn_packet(const char *src_ip, const char *dst_ip,
     iph->tos = 16;
     iph->id = htons(10201);
     iph->ttl = 64;
-    iph->protocol = 6;                  // ICMP
+    iph->protocol = 6;                  // TCP
 
     iph->daddr = inet_addr(dst_ip);
     iph->saddr = inet_addr(src_ip);

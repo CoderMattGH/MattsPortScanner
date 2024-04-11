@@ -4,4 +4,4 @@
 #define MAC_LEN 6
 #define IP_LEN 4
 
-#define MAX_THREADS 500
+#define MAX_THREADS 50

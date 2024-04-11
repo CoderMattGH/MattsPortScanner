@@ -135,3 +135,6 @@ int * scan_ports_raw(const unsigned char *src_ip, const unsigned char *tar_ip,
 unsigned char * construct_syn_packet(const char *src_ip, const char *dst_ip, 
         const unsigned char *src_mac, const unsigned char *dst_mac, 
         unsigned short int src_port, unsigned short int dst_port);
+
+void listen_for_ACK_replies(const unsigned char* tar_ip, 
+        const unsigned char* src_mac);

@@ -135,8 +135,9 @@ int main(int argc, char *argv[]) {
                 printf("Target IP (%s) is up.\n", get_ip_str(dest_ip));
             }
             
+            close(sock_raw);
+
             // If host is up, commence port scan
-            // scan_ports_multi(dest_ip, 1, MAX_PORT);
             scan_ports_raw_multi(get_ip_arr_rep(loc_ip_add), 
                     get_ip_arr_rep(dest_ip), loc_mac_add, mac_dest, 1, MAX_PORT,
                     loc_int_index);

@@ -124,6 +124,7 @@ unsigned short icmp_checksum(const unsigned short* start_of_header) {
     const int NUM_16_WORDS = 4;
     
     if (DEBUG >= 2) {
+        printf("\n");
         printf("ICMP Checksum\n");
         printf("-------------\n\n");
         printf("type,code:              %d\n", start_of_header[0]);

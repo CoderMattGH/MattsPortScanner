@@ -75,4 +75,3 @@ unsigned short icmp_checksum(const unsigned short* start_of_header);
  */
 int send_packet(const unsigned char *packet, int packet_len, int socket, 
         int dev_index, const unsigned char *mac_src);
-
