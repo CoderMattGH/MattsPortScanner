@@ -122,7 +122,7 @@ int send_arp_request(int sock_raw, const unsigned char *src_mac,
 
 char * search_arp_table(const char *ip_address) {
     if (DEBUG >= 2)
-        printf("Searching ARP table for IP address: %s.\n", ip_address);
+        printf("Searching ARP table for IP address: %s\n", ip_address);
 
     const char *COMMAND = "arp -a ";
 
@@ -198,11 +198,13 @@ unsigned char * get_mac_add_from_ip(const unsigned char *tar_ip, int sock_raw,
         return NULL;
     }
 
-    // Allow ARP request propagate.
-    sleep(2);
+    char* mac_str = listen_for_arp_response(src_mac, src_ip, tar_ip);
 
-    // Now query ARP table.
-    char* mac_str = search_arp_table(get_ip_arr_str(tar_ip));
+    // If no ARP response detected, check ARP table just in case we have a 
+    // cached entry.
+    if (mac_str == NULL) {
+        mac_str = search_arp_table(get_ip_arr_str(tar_ip));
+    }
 
     // If cannot find MAC entry in ARP table.
     if (mac_str == NULL) {
@@ -341,7 +343,7 @@ unsigned char * listen_for_arp_response(const unsigned char *loc_mac,
         }
     
         if (DEBUG >= 2) {
-            printf("Correct ARP reply verified.\n");
+            printf("Correct ARP reply verified\n");
         }
 
         close(arp_sock_raw);

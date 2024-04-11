@@ -199,7 +199,7 @@ struct in_addr * get_gw_ip_address(const char *dev_name) {
                     return NULL;
 
                 if (DEBUG >= 2) {
-                    printf("Default gateway IP found: %s!\n", 
+                    printf("Default gateway IP found: %s\n", 
                             get_ip_str(ip_add));
                 }
 

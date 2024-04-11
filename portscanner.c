@@ -127,11 +127,6 @@ int main(int argc, char *argv[]) {
         return -1;
     }
 
-    // MATT
-    listen_for_arp_response(loc_mac_add, get_ip_arr_rep(loc_ip_add), 
-            get_ip_arr_rep(dest_ip));
-    // END MATT
-
     listen_for_icmp_response(loc_mac_add, get_ip_arr_rep(loc_ip_add), 
             get_ip_arr_rep(dest_ip));
 
