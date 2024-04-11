@@ -198,16 +198,20 @@ unsigned char * get_mac_add_from_ip(const unsigned char *tar_ip, int sock_raw,
         return NULL;
     }
 
-    char* mac_str = listen_for_arp_response(src_mac, src_ip, tar_ip);
+    mac_dest = listen_for_arp_response(src_mac, src_ip, tar_ip);
 
     // If no ARP response detected, check ARP table just in case we have a 
     // cached entry.
-    if (mac_str == NULL) {
-        mac_str = search_arp_table(get_ip_arr_str(tar_ip));
+    if (mac_dest == NULL) {
+        char *mac_str = search_arp_table(get_ip_arr_str(tar_ip));
+
+        if (mac_str != NULL) {
+            mac_dest = get_mac_from_str(mac_str);
+        }
     }
 
     // If cannot find MAC entry in ARP table.
-    if (mac_str == NULL) {
+    if (mac_dest == NULL) {
         if (DEBUG >= 2) {
             printf("Cannot get ARP entry for IP address: %s\n", 
                     get_ip_arr_str(tar_ip));
@@ -231,15 +235,11 @@ unsigned char * get_mac_add_from_ip(const unsigned char *tar_ip, int sock_raw,
         if (DEBUG >= 2) {
             printf("Default gateway MAC address obtained\n");
         }
+
+        printf("TEMPMAC: %x:%x:%x\n", mac_dest[0], mac_dest[1], mac_dest[2]);
     } else {
         if (DEBUG >= 2) {
-            printf("Successfully obtained MAC address from ARP table\n");
-        }
-
-        mac_dest = get_mac_from_str(mac_str);
-
-        if (mac_dest == NULL) {
-            return NULL;
+            printf("Successfully obtained MAC address\n");
         }
     }
 
