@@ -2,26 +2,19 @@
 #include <unistd.h>
 #include <string.h>
 #include <stdlib.h>
-
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
-
 #include <linux/if_packet.h>
 #include <net/ethernet.h>
-
 #include <netinet/tcp.h>
 #include <netinet/ip.h>
 #include <netinet/udp.h>
 #include <netinet/ip_icmp.h>
-
 #include <sys/ioctl.h>
 #include <net/if.h>
-
 #include <time.h>
-
 #include <errno.h>
-
 #include <net/if_arp.h>
 
 #include "my_includes/network_helper.h"
@@ -30,6 +23,7 @@
 #include "my_includes/process_service.h"
 #include "my_includes/icmp_service.h"
 #include "my_includes/scanning_service.h"
+#include "my_includes/tcp_service.h"
 #include "my_includes/constants.h"
 
 int main(int argc, char *argv[]) {
@@ -99,6 +93,9 @@ int main(int argc, char *argv[]) {
         return -1;
     }
 
+    // Initialise random number seed
+    srand(0);
+
     // Search the ARP table for the MAC address associated with dest_ip.
     mac_dest = get_mac_add_from_ip(get_ip_arr_rep(dest_ip), sock_raw,
             loc_mac_add, get_ip_arr_rep(loc_ip_add), loc_int_index, dev_name);
@@ -137,10 +134,16 @@ int main(int argc, char *argv[]) {
             
             close(sock_raw);
 
-            // If host is up, commence port scan
+            // Commence port scan
+            
             scan_ports_raw_multi(get_ip_arr_rep(loc_ip_add), 
                     get_ip_arr_rep(dest_ip), loc_mac_add, mac_dest, 1, MAX_PORT,
                     loc_int_index);
+            
+            /*
+            scan_ports_raw(get_ip_arr_rep(loc_ip_add), get_ip_arr_rep(dest_ip),
+                    loc_mac_add, mac_dest, 80, 80, loc_int_index);
+            */
 
             break;
         // ICMP reply not received

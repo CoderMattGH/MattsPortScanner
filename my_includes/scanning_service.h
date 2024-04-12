@@ -114,27 +114,10 @@ int * scan_ports_raw(const unsigned char *src_ip, const unsigned char *tar_ip,
         int start_port, int end_port, int inter_index);
 
 /*
- * Function: construct_syn_packet
- * ------------------------------
- * Constructs and populates a TCP IP SYN packet with no data payload.
+ * Function: get_random_port_num
+ * -----------------------------
+ * Returns a random number between 1000 and MAX_PORT (65535).
  * 
- * src_ip: The source IP address represented as a string.
- * 
- * dst_ip: The destination IP address represented as a string.
- * 
- * src_mac: The source MAC address represented as an array.
- * 
- * dst_mac: The destination MAC address represented as an array.
- * 
- * src_port: The source port.
- * 
- * dst_port: The destination port.
- * 
- * return: A TCP IP SYN packet ready to send.
+ * Return: An unsigned short int between 1000 and MAX_PORT.
  */
-unsigned char * construct_syn_packet(const char *src_ip, const char *dst_ip, 
-        const unsigned char *src_mac, const unsigned char *dst_mac, 
-        unsigned short int src_port, unsigned short int dst_port);
-
-void listen_for_ACK_replies(const unsigned char* tar_ip, 
-        const unsigned char* src_mac);
+unsigned short int get_random_port_num();
