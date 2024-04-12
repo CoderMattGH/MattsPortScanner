@@ -218,7 +218,6 @@ int * scan_ports(struct in_addr *tar_ip, int start_port, int end_port) {
                 if (errno == EAGAIN || errno == EALREADY 
                         || errno == EINPROGRESS) {
 
-                    // sleep for 0.1 seconds
                     usleep(SLEEP_TIME_MILS);
 
                     continue;
@@ -262,7 +261,7 @@ int * scan_ports_raw(const unsigned char *src_ip, const unsigned char *tar_ip,
     int sock_raw;
 
     // Sleep time inbetween sending packets in microseconds
-    const int SLEEP_TIME_MICS = 1000 * 1000 * 0.00001;
+    const int SLEEP_TIME_MICS = 1000 * 1000 * 0.0005;
 
     for (int curr_port = start_port; curr_port <= end_port; curr_port++) {
         // Randomise source port
