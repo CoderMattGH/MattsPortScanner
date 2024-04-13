@@ -26,6 +26,66 @@
 #include "my_includes/tcp_service.h"
 #include "my_includes/constants.h"
 
+const unsigned short int COMM_POR_TCP[] = {
+    20,         // FTP
+    21,         // FTP
+    22,         // SSH
+    23,         // TELNET
+    25,         // SMTP
+    42,         // WINS
+    43,         // WHOIS
+    49,         // TACACS
+    53,         // DNS
+    69,         // TFTP
+    70,         // GOPHER
+    79,         // FINGER
+    80,         // HTTP
+    88,         // KERBEROS
+    102,        // TSAP
+    110,        // POP3
+    113,        // IDENT
+    119,        // NNTP (Usenet)
+    123,        // NTP
+    135,        // Ms RPC EPMAP
+    137,        // NETBIOS NS
+    138,        // NETBIOS (Datagram service)
+    139,        // NETBIOS (Session service)
+    143,        // IMAP
+    161,        // SNMP
+    179,        // Border Gateway Protocol
+    194,        // IRC
+    201,        // AppleTalk
+    264,        // Border Gateway Multicast Protocol
+    389,        // LDAP
+    443,        // HTTPS
+    445,        // SMB
+    554,        // RTSP
+    993,        // IMAPS
+    995,        // POP3S
+    1025,       // MS RPC
+    1080,       // SOCKS
+    1720,       // H.323
+    2082,       // CPANEL
+    3128,       // HTTP PROXY
+    3306,       // MYSQL
+    3389,       // RDP
+    5060,       // SIP
+    5061,       // SIP over TLS
+    5432,       // POSTGRESQL
+    6379,       // REDIS
+    6970,       // QUICKTIME STREAMING SERVER
+    8000,       // INTERNET RADIO
+    8080,       // HTTP PROXY
+    8200,       // VMWARE SERVER
+    8222,       // VMWARE SERVER
+    9092,       // KAFKA
+    19226,      // ADMINSECURE
+    27017       // MONGODB
+};
+
+const int COMM_POR_TCP_SZ 
+        = sizeof(COMM_POR_TCP) / sizeof(unsigned short int);
+
 int main(int argc, char *argv[]) {
     if (argc < 3) {
         printf("usage: mps <destination_ip> <interface_name>\n");
@@ -36,6 +96,9 @@ int main(int argc, char *argv[]) {
     printf("===================\n");
     printf("Matt's Port Scanner\n");
     printf("===================\n\n");
+
+    // Boolean specifying whether to perform a full port scan
+    unsigned char full_scan = 0;
 
     struct in_addr *dest_ip;
     unsigned short start_prt = 1;
@@ -135,15 +198,15 @@ int main(int argc, char *argv[]) {
             close(sock_raw);
 
             // Commence port scan
-            
-            scan_ports_raw_multi(get_ip_arr_rep(loc_ip_add), 
-                    get_ip_arr_rep(dest_ip), loc_mac_add, mac_dest, 1, MAX_PORT,
-                    loc_int_index);
-            
-            /*
-            scan_ports_raw(get_ip_arr_rep(loc_ip_add), get_ip_arr_rep(dest_ip),
-                    loc_mac_add, mac_dest, 80, 80, loc_int_index);
-            */
+            if (full_scan == 1) {
+                scan_ports_raw_multi(get_ip_arr_rep(loc_ip_add), 
+                        get_ip_arr_rep(dest_ip), loc_mac_add, mac_dest, 1, 
+                        MAX_PORT, loc_int_index);
+            } else {
+                scan_ports_raw_arr_multi(get_ip_arr_rep(loc_ip_add),
+                        get_ip_arr_rep(dest_ip), loc_mac_add, mac_dest, 
+                        COMM_POR_TCP, COMM_POR_TCP_SZ, loc_int_index);
+            }
 
             break;
         // ICMP reply not received

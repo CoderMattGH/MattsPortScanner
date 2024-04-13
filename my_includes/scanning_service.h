@@ -43,6 +43,23 @@ int * scan_ports_raw_multi(const unsigned char *src_ip,
         const unsigned char *tar_mac, int start_port, int end_port, 
         int inter_index);
 
+int * scan_ports_raw_arr_multi(const unsigned char *src_ip, 
+        const unsigned char *tar_ip, const unsigned char *src_mac,
+        const unsigned char *tar_mac, const unsigned short *ports, 
+        int ports_len, int inter_index);
+
+/*
+ * Function: scan_ports_raw_arr_proxy
+ * ----------------------------------
+ * A proxy function for scan_ports_raw_arr().  Primary purpose is to facilitate
+ * calling scan_ports_raw_arr() from a new thread.
+ * 
+ * scan_args: A struct scan_raw_arr_args structure cast as (void *).
+ * 
+ * return: Void
+ */
+void * scan_ports_raw_arr_proxy(void *scan_args);
+
 /*
  * Function: scan_ports_proxy
  * --------------------------
@@ -112,6 +129,38 @@ void * scan_ports_raw_proxy(void *scan_args);
 int * scan_ports_raw(const unsigned char *src_ip, const unsigned char *tar_ip, 
         const unsigned char *src_mac, const unsigned char *tar_mac,
         int start_port, int end_port, int inter_index);
+
+/*
+ * Function: scan_ports_raw_arr
+ * ----------------------------
+ * Scans the ports contained in the array sent as a function parameter. 
+ * 
+ * src_ip: The source IP address in array format.
+ * 
+ * tar_ip: The target IP address in array format.
+ * 
+ * src_mac: The source MAC address.
+ * 
+ * tar_mac: The target MAC address.
+ * 
+ * ports: The TCP port numbers to scan.
+ * 
+ * ports_len: The length of the ports array.
+ * 
+ * start_port: The port to start scanning from.
+ * 
+ * end_port: The port to end scanning at.
+ * 
+ * inter_index: The network interface index.
+ * 
+ * return: Returns an int array of size (MAX_PORT + 1).  The array index 
+ * pertains to the port number where a 1 indicates open and 0 indicates closed.  
+ * Or NULL on error.
+ */
+int * scan_ports_raw_arr(const unsigned char *src_ip,
+        const unsigned char *tar_ip, const unsigned char *src_mac,
+        const unsigned char *tar_mac, const unsigned short *ports,
+        int ports_len, int inter_index);
 
 /*
  * Function: get_random_port_num
