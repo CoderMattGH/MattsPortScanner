@@ -176,6 +176,8 @@ int main(int argc, const char *argv[]) {
             get_ip_arr_rep(dest_ip), loc_mac_add, mac_dest, sock_raw, 
             loc_int_index);
 
+    close(sock_raw);
+
     switch(ping_ret_val) {
         // ICMP reply received
         case(1):
@@ -183,8 +185,6 @@ int main(int argc, const char *argv[]) {
                 printf("Target IP (%s) is up.\n", get_ip_str(dest_ip));
             }
             
-            close(sock_raw);
-
             // Commence port scan
             if (full_scan == 1) {
                 scan_ports_raw_multi(get_ip_arr_rep(loc_ip_add), 
@@ -210,16 +210,13 @@ int main(int argc, const char *argv[]) {
         default:
             fprintf(stderr, 
                     "ERROR: An unknown error occurred with the ICMP request\n");
-            close(sock_raw);
-
+    
             return -1;
     }
 
     if (DEBUG >= 2) {
         printf("Exiting!\n");
     }
-
-    close(sock_raw);
 
     return 0;
 }
