@@ -156,7 +156,6 @@ int main(int argc, const char *argv[]) {
         return -1;
     }
 
-    // Verbose tag
     printf("\n");
     printf("Information\n");
     printf("-----------\n\n");

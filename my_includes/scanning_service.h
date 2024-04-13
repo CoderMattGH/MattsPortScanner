@@ -25,22 +25,6 @@ struct scan_raw_arr_args {
 };
 
 /*
- * Function: scan_ports_multi
- * --------------------------
- * Scans the port range in a multithreaded manner.
- * 
- * tar_ip: Target IP address.
- * 
- * start_port: Start of port range to scan.
- * 
- * end_port: End of port range to scan.
- * 
- * returns: An int array representing ports that are open (1) or closed(0).
- *          NULL on error.
- */
-int * scan_ports_multi(struct in_addr *tar_ip, int start_port, int end_port);
-
-/*
  * Function: scan_ports_raw_multi
  * ------------------------------
  * Scans the port range in a multithreaded manner using raw sockets, which
@@ -61,8 +45,7 @@ int * scan_ports_multi(struct in_addr *tar_ip, int start_port, int end_port);
  * 
  * inter_index: The network interface index.
  * 
- * return: An int array representing ports that are open (1) or closed(0).
- *          NULL on error.
+ * return: An int array of open TCP port numbers.
  */
 int * scan_ports_raw_multi(const unsigned char *src_ip,
         const unsigned char *tar_ip, const unsigned char *src_mac,
@@ -90,8 +73,7 @@ int * scan_ports_raw_multi(const unsigned char *src_ip,
  * 
  * inter_index: The network interface number.
  * 
- * return: An int array representing ports that are open (1) or closed (0).
- *         NULL on error.
+ * return: An integer array of open TCP port numbers.
  */
 int * scan_ports_raw_arr_multi(const unsigned char *src_ip, 
         const unsigned char *tar_ip, const unsigned char *src_mac,
@@ -109,36 +91,6 @@ int * scan_ports_raw_arr_multi(const unsigned char *src_ip,
  * return: Void
  */
 void * scan_ports_raw_arr_proxy(void *scan_args);
-
-/*
- * Function: scan_ports_proxy
- * --------------------------
- * A proxy function for scan_ports().  Primary purpose is to facilitate calling
- * scan_ports() from a new thread.
- * 
- * scan_args: A struct scan_port_args structure cast as (void *).
- * 
- * return: Void.
- */
-void * scan_ports_proxy(void *scan_args);
-
-/*
- * Function: scan_ports
- * --------------------
- * Scans the range of ports from start_port to end_port on the specified
- * target IP address.
- * 
- * tar_ip: The target IP address.
- * 
- * start_port: The port to start scanning at.
- * 
- * end_port: The port to end scanning at.
- * 
- * return: Returns an int array of size (MAX_PORT + 1).  The array index
- * pertains to the port number where a 1 indicates open and 0 indicates closed.
- * Or NULL on error.
- */
-int * scan_ports(struct in_addr *tar_ip, int start_port, int end_port);
 
 /*
  * Function: scan_ports_raw_proxy
@@ -172,11 +124,9 @@ void * scan_ports_raw_proxy(void *scan_args);
  * 
  * inter_index: The network interface index.
  * 
- * return: Returns an int array of size (MAX_PORT + 1).  The array index
- * pertains to the port number where a 1 indicates open and 0 indicates closed.
- * Or NULL on error.
+* return: an integer with 0 representing success and -1 as error.
  */
-int * scan_ports_raw(const unsigned char *src_ip, const unsigned char *tar_ip, 
+int scan_ports_raw(const unsigned char *src_ip, const unsigned char *tar_ip, 
         const unsigned char *src_mac, const unsigned char *tar_mac,
         int start_port, int end_port, int inter_index);
 
@@ -203,11 +153,9 @@ int * scan_ports_raw(const unsigned char *src_ip, const unsigned char *tar_ip,
  * 
  * inter_index: The network interface index.
  * 
- * return: Returns an int array of size (MAX_PORT + 1).  The array index 
- * pertains to the port number where a 1 indicates open and 0 indicates closed.  
- * Or NULL on error.
+ * return: an integer with 0 representing success and -1 as error.
  */
-int * scan_ports_raw_arr(const unsigned char *src_ip,
+int scan_ports_raw_arr(const unsigned char *src_ip,
         const unsigned char *tar_ip, const unsigned char *src_mac,
         const unsigned char *tar_mac, const unsigned short *ports,
         int ports_len, int inter_index);

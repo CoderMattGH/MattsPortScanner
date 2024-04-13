@@ -20,51 +20,6 @@
 #include "tcp_service.h"
 #include "constants.h"
 
-int * scan_ports_multi(struct in_addr *tar_ip, int start_port, int end_port) {
-    if (start_port < 1 || end_port > MAX_PORT) {
-        fprintf(stderr, "ERROR: Ports must be between 0 and %d\n", MAX_PORT);
-        
-        return NULL;
-    }
-
-    if (DEBUG >= 0) {
-        printf("Commencing multithreaded scan of target: %s\n", 
-                get_ip_str(tar_ip));
-    }
-
-    pthread_t tid[MAX_THREADS];
-    
-    // Number of ports each thread should scan
-    int port_chunk = (int)(ceil((end_port - start_port) / (double)MAX_THREADS));
-    
-    if (DEBUG >= 2) {
-        printf("Creating %d threads to scan in chunks of %d ports\n", 
-                MAX_THREADS, port_chunk);
-    }
-
-    for (int i = 0; i < MAX_THREADS; i++) {
-        struct scan_port_args *args = malloc(sizeof(struct scan_port_args));
-        memset(args, 0, sizeof(struct scan_port_args));
-
-        args->tar_ip = tar_ip;
-
-        args->start_port = start_port + (port_chunk * i);
-        args->end_port = args->start_port + port_chunk - 1;
-
-        if (args->end_port > MAX_PORT) {
-            args->end_port = MAX_PORT;
-        }
-
-        pthread_create(&tid[i], NULL, scan_ports_proxy, (void *)args);        
-    }
-
-    for (int i = 0; i < MAX_THREADS; i++) {
-        pthread_join(tid[i], NULL);
-    }
-
-    return NULL;
-}
-
 int * scan_ports_raw_multi(const unsigned char *src_ip,
         const unsigned char *tar_ip, const unsigned char *src_mac,
         const unsigned char *tar_mac, int start_port, int end_port, 
@@ -157,19 +112,6 @@ void * scan_ports_raw_arr_proxy(void *scan_args) {
     free(scan_args);
 }
 
-void * scan_ports_proxy(void *scan_args) {
-    struct scan_port_args *args = (struct scan_port_args *)scan_args;
-
-    if (DEBUG >= 3) {
-        printf("Creating thread\n");
-    }
-
-    scan_ports(args->tar_ip, args->start_port, args->end_port);
-
-    // Garbage collection
-    free(scan_args);
-}
-
 void * scan_ports_raw_proxy(void *scan_args) {
     struct scan_raw_port_args *args = (struct scan_raw_port_args *)scan_args;
 
@@ -184,97 +126,13 @@ void * scan_ports_raw_proxy(void *scan_args) {
     free(scan_args);
 }
 
-int * scan_ports(struct in_addr *tar_ip, int start_port, int end_port) {
-    if (start_port < 1 || end_port > MAX_PORT) {
-        fprintf(stderr, "ERROR: Ports must be between 0 and %d\n", MAX_PORT);
-        
-        return NULL;
-    }
-
-    if (DEBUG >= 3) {
-        printf("Scanning host: %s: %d - %d\n", get_ip_str(tar_ip), start_port,
-                end_port);
-    }
-
-    struct sockaddr_in serv_addr;
-    struct hostent* server;
-    int sockfd;
-
-    serv_addr.sin_family = AF_INET;
-    serv_addr.sin_addr = *tar_ip;
-
-    // Initialise to all zeros.
-    int open_ports[MAX_PORT + 1] = {0};
-
-    for (int curr_port = start_port; curr_port <= end_port; curr_port++) {
-        // Non-blocking socket
-        sockfd = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0);
-
-        if (sockfd < 0) {
-            return NULL;
-        }
-
-        // Change the port number
-        serv_addr.sin_port = htons(curr_port);
-
-        // Timeout in seconds
-        const int TIMEOUT_SECS = 7;
-
-        // Sleep time in milliseconds
-        const int SLEEP_TIME_MILS = 1000 * 1000 * 0.001;
-
-        long int start_time = time(0);
-        long int curr_time = time(0);
-
-        // Spin on non-blocking connect
-        while ((curr_time - start_time) <= TIMEOUT_SECS) {
-            // Get current time
-            curr_time = time(0);
-
-            // Reset errno
-            errno = 0;
-
-            // Try to connect
-            int conn_val = connect(sockfd, (struct sockaddr *)&serv_addr, 
-                    sizeof(serv_addr));
-            
-            if (conn_val < 0) {
-                if (errno == EAGAIN || errno == EALREADY 
-                        || errno == EINPROGRESS) {
-
-                    usleep(SLEEP_TIME_MILS);
-
-                    continue;
-                }
-                else {
-                    close(sockfd);
-
-                    break;
-                }
-            } 
-
-            if (DEBUG >= 3) {
-                printf("Open port detected: %d\n", curr_port);
-            }
-
-            open_ports[curr_port] = 1;
-        }
-
-        close(sockfd);
-
-        usleep(1);
-    }
-
-    return NULL;
-}
-
-int * scan_ports_raw(const unsigned char *src_ip, const unsigned char *tar_ip, 
+int scan_ports_raw(const unsigned char *src_ip, const unsigned char *tar_ip, 
         const unsigned char *src_mac, const unsigned char *tar_mac,
         int start_port, int end_port, int inter_index) {
     if (start_port < 1 || end_port > MAX_PORT) {
         fprintf(stderr, "ERROR: Ports must be between 0 and %d\n", MAX_PORT);
         
-        return NULL;
+        return -1;
     }
 
     if (DEBUG >= 3) {
@@ -294,8 +152,9 @@ int * scan_ports_raw(const unsigned char *src_ip, const unsigned char *tar_ip,
         // Raw socket
         sock_raw = socket(AF_PACKET, SOCK_RAW, IPPROTO_RAW);
 
-        if (sock_raw < 0)
-            return NULL;
+        if (sock_raw < 0) {
+            return -1;
+        }
 
         // Construct the TCP SYN packet
         unsigned char* packet = construct_syn_packet(get_ip_arr_str(src_ip), 
@@ -309,7 +168,7 @@ int * scan_ports_raw(const unsigned char *src_ip, const unsigned char *tar_ip,
         if (send_len < 0) {
             fprintf(stderr, "ERROR: Problem sending SYN packet!");
             
-            return NULL;
+            return -1;
         }
 
         if (DEBUG >= 3) {
@@ -320,10 +179,10 @@ int * scan_ports_raw(const unsigned char *src_ip, const unsigned char *tar_ip,
         usleep(SLEEP_TIME_MICS);
     }
 
-    return NULL;
+    return 0;
 }
 
-int * scan_ports_raw_arr(const unsigned char *src_ip, 
+int scan_ports_raw_arr(const unsigned char *src_ip, 
         const unsigned char *tar_ip, const unsigned char *src_mac,
         const unsigned char *tar_mac, const unsigned short *ports, 
         int ports_len, int inter_index) {
@@ -342,8 +201,9 @@ int * scan_ports_raw_arr(const unsigned char *src_ip,
         // Raw socket
         sock_raw = socket(AF_PACKET, SOCK_RAW, IPPROTO_RAW);
 
-        if (sock_raw < 0)
-            return NULL;
+        if (sock_raw < 0) {
+            return -1;
+        }
 
         // Construct the TCP SYN packet
         unsigned char* packet = construct_syn_packet(get_ip_arr_str(src_ip),
@@ -357,7 +217,7 @@ int * scan_ports_raw_arr(const unsigned char *src_ip,
         if (send_len < 0) {
             fprintf(stderr, "ERROR: Problem sending SYN packet!");
 
-            return NULL;
+            return -1;
         }
 
         if (DEBUG >= 3) {
@@ -368,7 +228,7 @@ int * scan_ports_raw_arr(const unsigned char *src_ip,
         usleep(SLEEP_TIME_MICS);
     }
 
-    return NULL;
+    return 0;
 }
 
 unsigned short int get_random_port_num() {
