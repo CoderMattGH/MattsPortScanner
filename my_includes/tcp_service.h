@@ -32,7 +32,8 @@ unsigned char * construct_syn_packet(const char *src_ip, const char *dst_ip,
  * dest_mac: The MAC address we use to filter out unwanted packets not meant
  *           for this interface.
  * 
- * return: TODO: Void
+ * return: A unsigned short int array of open ports or NULL on error or no ports
+ *         found. errno is set to EIO(5) on error.
   */
-void listen_for_ACK_replies(const unsigned char* tar_ip, 
+unsigned short int * listen_for_ACK_replies(const unsigned char* tar_ip, 
         const unsigned char* dest_mac);

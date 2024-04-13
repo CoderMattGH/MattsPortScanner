@@ -103,12 +103,13 @@ void * scan_ports_raw_arr_proxy(void *scan_args) {
     struct scan_raw_arr_args *args = (struct scan_raw_arr_args *)scan_args;
 
     if (DEBUG >= 3) {
-        printf("Creating thread\n");
+        printf("SYN packet sending thread created\n");
     }
 
     scan_ports_raw_arr(args->src_ip, args->tar_ip, args->src_mac, args->tar_mac, 
             args->ports, args->ports_len, args->inter_index);
 
+    // Garbage collection
     free(scan_args);
 }
 
@@ -116,7 +117,7 @@ void * scan_ports_raw_proxy(void *scan_args) {
     struct scan_raw_port_args *args = (struct scan_raw_port_args *)scan_args;
 
     if (DEBUG >= 3) {
-        printf("Creating thread\n");
+        printf("SYN packet sending thread created\n");
     }
 
     scan_ports_raw(args->src_ip, args->tar_ip, args->src_mac, args->tar_mac,

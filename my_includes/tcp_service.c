@@ -106,20 +106,25 @@ unsigned char * construct_syn_packet(const char *src_ip, const char *dst_ip,
     return sendbuff;
 }
 
-void listen_for_ACK_replies(const unsigned char* tar_ip, 
+unsigned short int * listen_for_ACK_replies(const unsigned char* tar_ip, 
         const unsigned char* dest_mac) {
     if (DEBUG >= 2) {
-        printf("Listening to ACK replies\n");
+        printf("Listening to ACK replies from target IP: %s\n", 
+                get_ip_arr_str(tar_ip));
     }
 
-    //int sock_listen_raw = socket(AF_PACKET, SOCK_RAW, htons(ETH_P_IP));
-    int sock_listen_raw = socket(AF_PACKET, SOCK_RAW, htons(ETH_P_ALL));
+    // Temporary array to hold open port numbers.
+    unsigned short int open_ports[MAX_PORT] = {0};
+    
+    int sock_listen_raw = socket(AF_PACKET, SOCK_RAW, htons(ETH_P_IP));
+    //int sock_listen_raw = socket(AF_PACKET, SOCK_RAW, htons(ETH_P_ALL));
 
     if (sock_listen_raw < 0) {
         fprintf(stderr, "ERROR: Cannot open raw socket!\n");
-        printf("ERRNO: %d\n", errno);
 
-        return;
+        errno = EIO;
+
+        return NULL;
     }
 
     // Receive a network packet and copy it in to buffer.
@@ -130,6 +135,7 @@ void listen_for_ACK_replies(const unsigned char* tar_ip,
     struct sockaddr saddr;
     int saddr_len = sizeof(struct sockaddr);
 
+    int array_index = 0;
     while (1) {
         // Reset buffer
         memset(rec_buff, 0, MAX_R_BUFF_SZ);
@@ -176,7 +182,31 @@ void listen_for_ACK_replies(const unsigned char* tar_ip,
         }
 
         if (DEBUG >= 2) {
-            printf("Open port: %d\n", htons(th->source));
+            printf("Open TCP port detected: %d\n", htons(th->source));
         }
+
+        open_ports[array_index++] = htons(th->source);
     }
+
+    // Find real length of open_ports array
+    int open_ports_len = 0;
+    for (open_ports_len; open_ports[open_ports_len] != 0; open_ports_len++) {}
+    open_ports_len++;
+
+    // No open ports found
+    if (open_ports_len == 0) {
+        return NULL;
+    }
+
+    // Copy open ports to new malloced array
+    unsigned short int *open_ports_perm = 
+            malloc(sizeof(short int) * open_ports_len);
+    memset(open_ports_perm, 0, sizeof(short int) * open_ports_len);
+
+    // Transfer values
+    for (int i = 0; i < open_ports_len; i++) {
+        open_ports_perm[i] = open_ports[i];
+    }
+
+    return open_ports_perm;
 }
