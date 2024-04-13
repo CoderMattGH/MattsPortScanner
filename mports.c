@@ -17,6 +17,7 @@
 #include <errno.h>
 #include <net/if_arp.h>
 
+#include "mports.h"
 #include "my_includes/network_helper.h"
 #include "my_includes/packet_service.h"
 #include "my_includes/arp_service.h"
@@ -86,41 +87,29 @@ const unsigned short int COMM_POR_TCP[] = {
 const int COMM_POR_TCP_SZ 
         = sizeof(COMM_POR_TCP) / sizeof(unsigned short int);
 
-int main(int argc, char *argv[]) {
-    if (argc < 3) {
-        printf("usage: mps <destination_ip> <interface_name>\n");
+int main(int argc, const char *argv[]) {
+    struct input_args *args = parse_input_args(argc, argv);
+
+    if (args == NULL) {
+        print_usage();
 
         return 0;
     }
 
-    printf("===================\n");
-    printf("Matt's Port Scanner\n");
-    printf("===================\n\n");
+    printf("Matt's Port Scanner v%s\n\n", VERSION);
 
-    // Boolean specifying whether to perform a full port scan
-    unsigned char full_scan = 0;
-
-    struct in_addr *dest_ip;
-    unsigned short start_prt = 1;
-    unsigned short end_prt = MAX_PORT;
-    char *dev_name;
-    unsigned char *mac_dest;
+    const unsigned char full_scan = !(args->simp_scan);
+    const struct in_addr *dest_ip = args->tar_ip;
+    const unsigned short start_prt = args->start_port;
+    const unsigned short end_prt = args->end_port;
+    const char *dev_name = args->dev_name;
     
-    int loc_int_index;                      // Local interface index
-    unsigned char *loc_mac_add;             // Local MAC address
-    struct in_addr *loc_ip_add;             // Local IP address
+    const unsigned char *mac_dest;                // Destination MAC address
+    int loc_int_index;                            // Local interface index
+    const unsigned char *loc_mac_add;             // Local MAC address
+    const struct in_addr *loc_ip_add;             // Local IP address
 
-    // Set destination IP
-    dest_ip = get_ip_from_str(argv[1]);
-
-    // Set network interface ID
-    dev_name = argv[2];
-
-    if (dest_ip == NULL) {
-        fprintf(stderr, "ERROR: Cannot parse IP address\n");
-
-        return -1;
-    }
+    free(args);
 
     int sock_raw = socket(AF_PACKET, SOCK_RAW, IPPROTO_RAW);
     if(sock_raw == -1) {
@@ -156,9 +145,6 @@ int main(int argc, char *argv[]) {
         return -1;
     }
 
-    // Initialise random number seed
-    srand(0);
-
     // Search the ARP table for the MAC address associated with dest_ip.
     mac_dest = get_mac_add_from_ip(get_ip_arr_rep(dest_ip), sock_raw,
             loc_mac_add, get_ip_arr_rep(loc_ip_add), loc_int_index, dev_name);
@@ -175,10 +161,13 @@ int main(int argc, char *argv[]) {
     printf("Information\n");
     printf("-----------\n\n");
     printf("Destination IP:             %s\n", get_ip_str(dest_ip));
-    printf("Destination ports:          %d-%d\n", start_prt, end_prt);
+
+    if (full_scan) {
+        printf("Destination ports:          %d-%d\n", start_prt, end_prt);
+    }
+
     printf("Destination MAC address:    %s\n", get_mac_str(mac_dest));
     printf("Local network device:       %s\n", dev_name);
-
     printf("Local device index:         %d\n", loc_int_index);
     printf("Local MAC address:          %s\n", get_mac_str(loc_mac_add));
     printf("Local IP address:           %s\n\n", get_ip_str(loc_ip_add));
@@ -211,7 +200,7 @@ int main(int argc, char *argv[]) {
             break;
         // ICMP reply not received
         case(0):
-            if (DEBUG >= 2) {
+            if (DEBUG >= 0) {
                 printf("Target IP (%s) is down or not responding to ping " 
                         "requests\n", get_ip_str(dest_ip));
             }
@@ -234,4 +223,100 @@ int main(int argc, char *argv[]) {
     close(sock_raw);
 
     return 0;
+}
+
+struct input_args * parse_input_args(int argc, const char **argv) {
+    if (argc < 2) {
+        print_usage();
+
+        return NULL;
+    }
+
+    struct input_args *in_args = malloc(sizeof(struct input_args));
+    memset(in_args, 0, sizeof(struct input_args));
+
+    // Set defaults
+    in_args->tar_ip = NULL;
+    in_args->dev_name = NULL;
+    in_args->simp_scan = 1;
+    in_args->start_port = 1;
+    in_args->end_port = MAX_PORT;
+
+    const int MAX_TOK_LEN = 30;
+
+    const char* IP_PARAM = "-ip";
+    const char* DEV_PARAM = "-dev";
+    const char* FULL_SCAN_FLAG = "-f";
+
+    unsigned char ip_param_set = 0;
+    unsigned char dev_param_set = 0;
+    unsigned char full_scan_flag_set = 0;
+
+    // Loop through input parameters and identify parameters and flags
+    for (int i = 1; i < argc; i++) {
+        if (strncmp(argv[i], IP_PARAM, strlen(IP_PARAM)) == 0) {
+            if (ip_param_set) {
+                return NULL;
+            }
+
+            // TODO: Validate IP here
+            if (argv[i + 1] == NULL) {
+                return NULL;
+            }
+
+            in_args->tar_ip = get_ip_from_str(argv[i + 1]);
+            ip_param_set = 1;
+            i++;
+        }
+        else if (strncmp(argv[i], DEV_PARAM, strlen(DEV_PARAM)) == 0) {
+            if (dev_param_set) {
+                return NULL;
+            }
+
+            // TODO: Validate dev name here
+            if (argv[i + 1] == NULL) {
+                return NULL;
+            }
+
+            in_args->dev_name = argv[i + 1];
+            dev_param_set = 1;
+            i++;
+        } 
+        else if (
+                strncmp(argv[i], FULL_SCAN_FLAG, strlen(FULL_SCAN_FLAG)) == 0) {
+            if(full_scan_flag_set) {
+                return NULL;
+            }
+
+            in_args->simp_scan = 0;
+        } 
+        else {
+            return NULL;
+        }
+    }
+
+    unsigned char load_prog = 1;
+    
+    if (in_args->tar_ip == NULL)
+        load_prog = 0;
+    
+    if (in_args->dev_name == NULL)
+        load_prog = 0;
+
+    if (load_prog == 0)
+        return NULL;
+    else
+        return in_args;
+}
+
+void print_usage() {
+    printf("Matt's Port Scanner v%s\n", VERSION);
+    printf("usage: mports [MANDATORY_PARAMS] [OPTIONAL_PARAMS]\n");
+    printf("MANDATORY PARAMS:\n");
+    printf("  -ip       <target_ipv4_address>\n");
+    printf("  -dev      <network_interface_name>\n");
+    printf("OPTIONAL PARAMS:\n");
+    printf("  -f        Scans every TCP port between 1 and %d\n", MAX_PORT);
+    printf("EXAMPLE:\n");
+    printf("mports -ip 192.168.12.1 -dev enp4s0\n");
 }

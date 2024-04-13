@@ -20,32 +20,6 @@
 #include "tcp_service.h"
 #include "constants.h"
 
-struct scan_port_args {
-    struct in_addr *tar_ip;
-    int start_port;
-    int end_port;
-};
-
-struct scan_raw_port_args {
-    const unsigned char *src_ip;
-    const unsigned char *tar_ip;
-    const unsigned char *src_mac;
-    const unsigned char *tar_mac;
-    int start_port;
-    int end_port;
-    int inter_index;
-};
-
-struct scan_raw_arr_args {
-    const unsigned char *src_ip;
-    const unsigned char *tar_ip;
-    const unsigned char *src_mac;
-    const unsigned char *tar_mac;
-    const unsigned short *ports;
-    int ports_len;
-    int inter_index;    
-};
-
 int * scan_ports_multi(struct in_addr *tar_ip, int start_port, int end_port) {
     if (start_port < 1 || end_port > MAX_PORT) {
         fprintf(stderr, "ERROR: Ports must be between 0 and %d\n", MAX_PORT);
@@ -53,7 +27,7 @@ int * scan_ports_multi(struct in_addr *tar_ip, int start_port, int end_port) {
         return NULL;
     }
 
-    if (DEBUG >= 2) {
+    if (DEBUG >= 0) {
         printf("Commencing multithreaded scan of target: %s\n", 
                 get_ip_str(tar_ip));
     }
@@ -67,6 +41,7 @@ int * scan_ports_multi(struct in_addr *tar_ip, int start_port, int end_port) {
         printf("Creating %d threads to scan in chunks of %d ports\n", 
                 MAX_THREADS, port_chunk);
     }
+
     for (int i = 0; i < MAX_THREADS; i++) {
         struct scan_port_args *args = malloc(sizeof(struct scan_port_args));
         memset(args, 0, sizeof(struct scan_port_args));
@@ -100,7 +75,7 @@ int * scan_ports_raw_multi(const unsigned char *src_ip,
         return NULL;
     }
 
-    if (DEBUG >= 2) {
+    if (DEBUG >= 0) {
         printf("Commencing multithreaded scan of target: %s\n", 
                 get_ip_arr_str(tar_ip));
     }
@@ -129,9 +104,8 @@ int * scan_ports_raw_multi(const unsigned char *src_ip,
         args->start_port = start_port + (port_chunk * i);
         args->end_port = args->start_port + port_chunk - 1;
 
-        if (args->end_port > MAX_PORT) {
+        if (args->end_port > MAX_PORT)
             args->end_port = MAX_PORT;
-        }
 
         pthread_create(&tid[i], NULL, scan_ports_raw_proxy, (void *)args);
     }
@@ -147,7 +121,7 @@ int * scan_ports_raw_arr_multi(const unsigned char *src_ip,
         const unsigned char *tar_ip, const unsigned char *src_mac,
         const unsigned char *tar_mac, const unsigned short *ports, 
         int ports_len, int inter_index) {
-    if (DEBUG >= 2) {
+    if (DEBUG >= 0) {
         printf("Commencing scan of target: %s\n", get_ip_arr_str(tar_ip));
     }
 
@@ -173,7 +147,7 @@ int * scan_ports_raw_arr_multi(const unsigned char *src_ip,
 void * scan_ports_raw_arr_proxy(void *scan_args) {
     struct scan_raw_arr_args *args = (struct scan_raw_arr_args *)scan_args;
 
-    if (DEBUG >= 2) {
+    if (DEBUG >= 3) {
         printf("Creating thread\n");
     }
 
@@ -320,9 +294,8 @@ int * scan_ports_raw(const unsigned char *src_ip, const unsigned char *tar_ip,
         // Raw socket
         sock_raw = socket(AF_PACKET, SOCK_RAW, IPPROTO_RAW);
 
-        if (sock_raw < 0) {
+        if (sock_raw < 0)
             return NULL;
-        }
 
         // Construct the TCP SYN packet
         unsigned char* packet = construct_syn_packet(get_ip_arr_str(src_ip), 
@@ -354,9 +327,8 @@ int * scan_ports_raw_arr(const unsigned char *src_ip,
         const unsigned char *tar_ip, const unsigned char *src_mac,
         const unsigned char *tar_mac, const unsigned short *ports, 
         int ports_len, int inter_index) {
-    if (DEBUG >= 3) {
+    if (DEBUG >= 3)
         printf("Scanning host: %s: \n", get_ip_arr_str(src_ip));
-    }
 
     int sock_raw;
 
@@ -370,9 +342,8 @@ int * scan_ports_raw_arr(const unsigned char *src_ip,
         // Raw socket
         sock_raw = socket(AF_PACKET, SOCK_RAW, IPPROTO_RAW);
 
-        if (sock_raw < 0) {
+        if (sock_raw < 0)
             return NULL;
-        }
 
         // Construct the TCP SYN packet
         unsigned char* packet = construct_syn_packet(get_ip_arr_str(src_ip),
@@ -401,6 +372,13 @@ int * scan_ports_raw_arr(const unsigned char *src_ip,
 }
 
 unsigned short int get_random_port_num() {
+    static unsigned char seeded = 0;
+
+    if (seeded == 0) {
+        srand(0);
+        seeded = 1;
+    }
+
     const int START = 100;
     const int END = MAX_PORT;
 

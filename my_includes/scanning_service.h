@@ -1,3 +1,29 @@
+struct scan_port_args {
+    struct in_addr *tar_ip;
+    int start_port;
+    int end_port;
+};
+
+struct scan_raw_port_args {
+    const unsigned char *src_ip;
+    const unsigned char *tar_ip;
+    const unsigned char *src_mac;
+    const unsigned char *tar_mac;
+    int start_port;
+    int end_port;
+    int inter_index;
+};
+
+struct scan_raw_arr_args {
+    const unsigned char *src_ip;
+    const unsigned char *tar_ip;
+    const unsigned char *src_mac;
+    const unsigned char *tar_mac;
+    const unsigned short *ports;
+    int ports_len;
+    int inter_index;    
+};
+
 /*
  * Function: scan_ports_multi
  * --------------------------
@@ -35,7 +61,7 @@ int * scan_ports_multi(struct in_addr *tar_ip, int start_port, int end_port);
  * 
  * inter_index: The network interface index.
  * 
- * returns: An int array representing ports that are open (1) or closed(0).
+ * return: An int array representing ports that are open (1) or closed(0).
  *          NULL on error.
  */
 int * scan_ports_raw_multi(const unsigned char *src_ip,
@@ -43,6 +69,30 @@ int * scan_ports_raw_multi(const unsigned char *src_ip,
         const unsigned char *tar_mac, int start_port, int end_port, 
         int inter_index);
 
+/*
+ * Function: scan_ports_raw_arr_multi
+ * ----------------------------------
+ * Scans the ports specified in the ports array in a multithreaded manner using 
+ * raw sockets, which reduces the number of retransmissions and thus increases
+ * speed and lowers bandwidth.
+ * 
+ * src_ip: The source IP address in array format.
+ * 
+ * tar_ip: The target IP address in array format.
+ * 
+ * src_mac: The source MAC address in array format.
+ * 
+ * tar_mac: The target MAC address in array format.
+ * 
+ * ports: The ports to scan in an unsigned short array.
+ * 
+ * ports_len: The length of the ports array.
+ * 
+ * inter_index: The network interface number.
+ * 
+ * return: An int array representing ports that are open (1) or closed (0).
+ *         NULL on error.
+ */
 int * scan_ports_raw_arr_multi(const unsigned char *src_ip, 
         const unsigned char *tar_ip, const unsigned char *src_mac,
         const unsigned char *tar_mac, const unsigned short *ports, 

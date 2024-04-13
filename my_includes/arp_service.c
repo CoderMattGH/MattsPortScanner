@@ -185,8 +185,8 @@ char * search_arp_table(const char *ip_address) {
 unsigned char * get_mac_add_from_ip(const unsigned char *tar_ip, int sock_raw, 
         const unsigned char *src_mac, const unsigned char *src_ip, 
         int dev_index, const char* dev_name) {
-    if (DEBUG >= 2) {
-        printf("Attempting to obtain MAC address for IP address %s\n", 
+    if (DEBUG >= 0) {
+        printf("Attempting to obtain MAC address for IP address: %s\n", 
                 get_ip_arr_str(tar_ip));
     }
 
@@ -212,10 +212,10 @@ unsigned char * get_mac_add_from_ip(const unsigned char *tar_ip, int sock_raw,
 
     // If cannot find MAC entry in ARP table.
     if (mac_dest == NULL) {
-        if (DEBUG >= 2) {
+        if (DEBUG >= 0) {
             printf("Cannot get ARP entry for IP address: %s\n", 
                     get_ip_arr_str(tar_ip));
-            printf("Obtaining default gateway MAC address\n");
+            printf("Obtaining default gateway MAC address...\n");
         }
 
         struct in_addr *gw_ip_add = get_gw_ip_address(dev_name);
@@ -233,11 +233,11 @@ unsigned char * get_mac_add_from_ip(const unsigned char *tar_ip, int sock_raw,
         }
 
         if (DEBUG >= 2) {
-            printf("Default gateway MAC address obtained\n");
+            printf("Default gateway MAC address obtained!\n");
         }
     } else {
-        if (DEBUG >= 2) {
-            printf("Successfully obtained MAC address\n");
+        if (DEBUG >= 0) {
+            printf("Successfully obtained MAC address!\n");
         }
     }
 
@@ -302,7 +302,7 @@ unsigned char * listen_for_arp_response(const unsigned char *loc_mac,
         // Extract ethernet header
         struct ethhdr *eth = (struct ethhdr *)(buffer);
 
-        if (DEBUG >= 2) {
+        if (DEBUG >= 3) {
             printf("ARP packet received: ");
             printf("src_mac: %s ", get_mac_str(eth->h_source));
             printf("dst_mac: %s\n", get_mac_str(eth->h_dest));
@@ -316,16 +316,11 @@ unsigned char * listen_for_arp_response(const unsigned char *loc_mac,
         // Extract ARP header
         struct arphdr *arph = (struct arphdr *)(buffer + sizeof(struct ethhdr));
 
-        if (DEBUG >= 2) {
-            printf("ARP packet: ");
-            printf("op-code: %d\n", htons(arph->ar_op));
-        }
-
         // Extract data payload
         struct arp_payload *arppl = (struct arp_payload *)
                 (buffer + sizeof(struct ethhdr) + sizeof(struct arphdr));
         
-        if (DEBUG >= 2) {
+        if (DEBUG >= 3) {
             printf("ARP payload: ");
             printf("src_ip: %s ", get_ip_arr_str(arppl->src_ip));
             printf("dst_ip: %s ", get_ip_arr_str(arppl->tar_ip));
