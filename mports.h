@@ -41,3 +41,14 @@ struct input_args * parse_input_args(int argc, const char **argv);
  * Prints the program's usage message.
  */
 void print_usage();
+
+/*
+ * Function: get_common_ports_arr
+ * ------------------------------
+ * Copies common port numbers into the arr_copy array parameter.
+ * 
+ * arr_copy: A NULL pointer.
+ * 
+ * return: The length of the array copied.
+ */
+int get_common_ports_arr(unsigned short int *arr_copy);

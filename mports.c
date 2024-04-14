@@ -27,66 +27,6 @@
 #include "my_includes/tcp_service.h"
 #include "my_includes/constants.h"
 
-const unsigned short int COMM_POR_TCP[] = {
-    20,         // FTP
-    21,         // FTP
-    22,         // SSH
-    23,         // TELNET
-    25,         // SMTP
-    42,         // WINS
-    43,         // WHOIS
-    49,         // TACACS
-    53,         // DNS
-    69,         // TFTP
-    70,         // GOPHER
-    79,         // FINGER
-    80,         // HTTP
-    88,         // KERBEROS
-    102,        // TSAP
-    110,        // POP3
-    113,        // IDENT
-    119,        // NNTP (Usenet)
-    123,        // NTP
-    135,        // Ms RPC EPMAP
-    137,        // NETBIOS NS
-    138,        // NETBIOS (Datagram service)
-    139,        // NETBIOS (Session service)
-    143,        // IMAP
-    161,        // SNMP
-    179,        // Border Gateway Protocol
-    194,        // IRC
-    201,        // AppleTalk
-    264,        // Border Gateway Multicast Protocol
-    389,        // LDAP
-    443,        // HTTPS
-    445,        // SMB
-    554,        // RTSP
-    993,        // IMAPS
-    995,        // POP3S
-    1025,       // MS RPC
-    1080,       // SOCKS
-    1720,       // H.323
-    2082,       // CPANEL
-    3128,       // HTTP PROXY
-    3306,       // MYSQL
-    3389,       // RDP
-    5060,       // SIP
-    5061,       // SIP over TLS
-    5432,       // POSTGRESQL
-    6379,       // REDIS
-    6970,       // QUICKTIME STREAMING SERVER
-    8000,       // INTERNET RADIO
-    8080,       // HTTP PROXY
-    8200,       // VMWARE SERVER
-    8222,       // VMWARE SERVER
-    9092,       // KAFKA
-    19226,      // ADMINSECURE
-    27017       // MONGODB
-};
-
-const int COMM_POR_TCP_SZ 
-        = sizeof(COMM_POR_TCP) / sizeof(unsigned short int);
-
 int main(int argc, const char *argv[]) {
     struct input_args *args = parse_input_args(argc, argv);
 
@@ -191,9 +131,12 @@ int main(int argc, const char *argv[]) {
                         get_ip_arr_rep(dest_ip), loc_mac_add, mac_dest, 1, 
                         MAX_PORT, loc_int_index);
             } else {
+                unsigned short int *comm_ports;
+                int comm_ports_len = get_common_ports_arr(comm_ports);
+
                 scan_ports_raw_arr_multi(get_ip_arr_rep(loc_ip_add),
                         get_ip_arr_rep(dest_ip), loc_mac_add, mac_dest, 
-                        COMM_POR_TCP, COMM_POR_TCP_SZ, loc_int_index);
+                        comm_ports, comm_ports_len, loc_int_index);
             }
 
             break;
@@ -315,4 +258,69 @@ void print_usage() {
     printf("  -f        Scans every TCP port between 1 and %d\n", MAX_PORT);
     printf("EXAMPLE:\n");
     printf("mports -ip 192.168.12.1 -dev enp4s0\n");
+}
+
+int get_common_ports_arr(unsigned short int *arr_copy) {
+    const unsigned short int COMM_POR_TCP[] = {
+        20,         // FTP
+        21,         // FTP
+        22,         // SSH
+        23,         // TELNET
+        25,         // SMTP
+        42,         // WINS
+        43,         // WHOIS
+        49,         // TACACS
+        53,         // DNS
+        69,         // TFTP
+        70,         // GOPHER
+        79,         // FINGER
+        80,         // HTTP
+        88,         // KERBEROS
+        102,        // TSAP
+        110,        // POP3
+        113,        // IDENT
+        119,        // NNTP (Usenet)
+        123,        // NTP
+        135,        // Ms RPC EPMAP
+        137,        // NETBIOS NS
+        138,        // NETBIOS (Datagram service)
+        139,        // NETBIOS (Session service)
+        143,        // IMAP
+        161,        // SNMP
+        179,        // Border Gateway Protocol
+        194,        // IRC
+        201,        // AppleTalk
+        264,        // Border Gateway Multicast Protocol
+        389,        // LDAP
+        443,        // HTTPS
+        445,        // SMB
+        554,        // RTSP
+        993,        // IMAPS
+        995,        // POP3S
+        1025,       // MS RPC
+        1080,       // SOCKS
+        1720,       // H.323
+        2082,       // CPANEL
+        3128,       // HTTP PROXY
+        3306,       // MYSQL
+        3389,       // RDP
+        5060,       // SIP
+        5061,       // SIP over TLS
+        5432,       // POSTGRESQL
+        6379,       // REDIS
+        6970,       // QUICKTIME STREAMING SERVER
+        8000,       // INTERNET RADIO
+        8080,       // HTTP PROXY
+        8200,       // VMWARE SERVER
+        8222,       // VMWARE SERVER
+        9092,       // KAFKA
+        19226,      // ADMINSECURE
+        27017       // MONGODB
+    };
+
+    const int arr_len = sizeof(COMM_POR_TCP) / sizeof(unsigned short int);
+
+    arr_copy = malloc(sizeof(unsigned short int) * arr_len);
+
+    return arr_len;
 }
