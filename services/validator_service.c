@@ -5,15 +5,22 @@
 
 #include <errno.h>
 
+#include <netinet/in.h>
+
 #include "validator_service.h"
+#include "network_helper.h"
 #include "../constants/constants.h"
 
 unsigned char validate_ip_str(const char* ip_str) {
     if (DEBUG >= 2) {
-        printf("Validating IP address...\n");
+        printf("Validating IP address string...\n");
     }
 
     if (ip_str == NULL) {
+        if (DEBUG >= 2) {
+            printf("IP address string cannot be NULL!\n");
+        }
+
         return 0;
     }
 
@@ -42,7 +49,6 @@ unsigned char validate_ip_str(const char* ip_str) {
 
         errno = 0;
 
-        // Check if first digit is between 1 and 255
         long int num = strtol(token, NULL, 10);
 
         // Check no error occurred
@@ -55,16 +61,15 @@ unsigned char validate_ip_str(const char* ip_str) {
         }
 
         // First and last digit cannot be 0
-        if (i == 0 || i == 3) {
-            if (num <= 0 || num >= 255) {
-                if (DEBUG >= 2) {
-                    printf("IP address is outside of valid range!\n");
-                }
-
-                return 0;
+        if ((i == 0 || i == 3) && (num == 0)) {
+            if (DEBUG >= 2) {
+                printf("First and last digit of IP address cannot be 0!\n");
             }
+
+            return 0;
         } 
-        else if (num < 0 || num > 255) {
+        
+        if (num < 0 || num > 255) {
             if (DEBUG >= 2) {
                 printf("IP address is outside of valid range!\n");
             }
@@ -89,4 +94,58 @@ unsigned char validate_ip_str(const char* ip_str) {
     }
 
     return 1;
+}
+
+unsigned char validate_ip_arr(const unsigned char *ip_arr) {
+    if (DEBUG >= 2) {
+        printf("Validating IP address array...");
+    }
+
+    if (ip_arr == NULL) {
+        if (DEBUG >= 2) {
+            printf("IP address array cannot be NULL!\n");
+        }
+
+        return 0;
+    }
+
+    for (int i = 0; i < IP_LEN; i++) {
+        if ((i == 0 || i == 3) && (ip_arr[i] == 0)) {
+            if (DEBUG >= 2) {
+                printf("First and last digit of IP address cannot be 0!\n");
+
+                return 0;
+            }
+        }
+
+        if (ip_arr[i] < 0 || ip_arr[i] > 255) {
+            if (DEBUG >= 2) {
+                printf("IP address it out of range!\n");
+            }
+        }
+    }
+
+    if (DEBUG >= 2) {
+        printf("IP address is valid!\n");
+    }
+
+    return 1;
+}
+
+unsigned char validate_ip_add(struct in_addr* ip_add) {
+    if (DEBUG >= 2) {
+        printf("Validating IP address...\n");
+    }
+
+    if (ip_add == NULL) {
+        if (DEBUG >= 2) {
+            printf("IP address cannot be NULL!\n");
+
+            return 0;
+        }
+    }
+
+    unsigned char *temp_ip = get_ip_arr_rep(ip_add);
+
+    return validate_ip_arr(temp_ip);
 }
