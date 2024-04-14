@@ -7,7 +7,7 @@
 
 #include <netinet/in.h>
 
-#include "validator_service.h"
+#include "ip_validator_service.h"
 #include "network_helper.h"
 #include "../constants/constants.h"
 

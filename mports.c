@@ -11,7 +11,7 @@
 #include "services/arp_service.h"
 #include "services/icmp_service.h"
 #include "services/scanning_service.h"
-#include "services/validator_service.h"
+#include "services/ip_validator_service.h"
 #include "constants/constants.h"
 
 int main(int argc, const char *argv[]) {
