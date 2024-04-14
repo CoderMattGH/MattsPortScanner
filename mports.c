@@ -11,7 +11,7 @@
 #include "services/arp_service.h"
 #include "services/icmp_service.h"
 #include "services/scanning_service.h"
-#include "constants.h"
+#include "constants/constants.h"
 
 int main(int argc, const char *argv[]) {
     struct input_args *args = parse_input_args(argc, argv);
