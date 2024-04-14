@@ -2,29 +2,15 @@
 #include <unistd.h>
 #include <string.h>
 #include <stdlib.h>
+
 #include <sys/socket.h>
 #include <netinet/in.h>
-#include <arpa/inet.h>
-#include <linux/if_packet.h>
-#include <net/ethernet.h>
-#include <netinet/tcp.h>
-#include <netinet/ip.h>
-#include <netinet/udp.h>
-#include <netinet/ip_icmp.h>
-#include <sys/ioctl.h>
-#include <net/if.h>
-#include <time.h>
-#include <errno.h>
-#include <net/if_arp.h>
 
 #include "mports.h"
 #include "my_includes/network_helper.h"
-#include "my_includes/packet_service.h"
 #include "my_includes/arp_service.h"
-#include "my_includes/process_service.h"
 #include "my_includes/icmp_service.h"
 #include "my_includes/scanning_service.h"
-#include "my_includes/tcp_service.h"
 #include "my_includes/constants.h"
 
 int main(int argc, const char *argv[]) {

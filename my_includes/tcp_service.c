@@ -3,18 +3,15 @@
 #include <stdio.h>
 #include <string.h>
 
-#include <errno.h>
-#include <netinet/in.h>
 #include <net/ethernet.h>
 #include <netinet/ip.h>
 #include <arpa/inet.h>
 #include <netinet/tcp.h>
-#include <net/if.h>
-#include <linux/if_packet.h>
+
+#include <errno.h>
 
 #include "tcp_service.h"
 #include "checksum_service.h"
-#include "packet_service.h"
 #include "network_helper.h"
 #include "constants.h"
 

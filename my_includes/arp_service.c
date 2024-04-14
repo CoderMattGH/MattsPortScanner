@@ -3,15 +3,9 @@
 #include <unistd.h>
 #include <stdlib.h>
 
-#include <sys/socket.h>
 #include <netinet/in.h>
-#include <arpa/inet.h>
-
-#include <netinet/tcp.h>
-#include <netinet/ip.h>
 #include <net/ethernet.h>
 #include <net/if.h>
-
 #include <net/if_arp.h>
 
 #include <errno.h>

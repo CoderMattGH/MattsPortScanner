@@ -1,14 +1,11 @@
-#include <net/ethernet.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <arpa/inet.h>
-#include <netinet/tcp.h>
-#include <netinet/ip.h>
-#include <netinet/udp.h>
-#include <netinet/ip_icmp.h>
-#include <sys/socket.h>
+
+#include <net/ethernet.h>
 #include <linux/if_packet.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
 
 #include "packet_service.h"
 #include "network_helper.h"

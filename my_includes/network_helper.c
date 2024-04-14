@@ -1,11 +1,12 @@
 #include <unistd.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
 #include <netinet/in.h>
 #include <net/if.h>
 #include <sys/ioctl.h>
 #include <arpa/inet.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 
 #include "network_helper.h"
 #include "process_service.h"
