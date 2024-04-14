@@ -13,6 +13,7 @@
 #include <linux/if_packet.h>
 
 #include "tcp_service.h"
+#include "checksum_service.h"
 #include "packet_service.h"
 #include "network_helper.h"
 #include "constants.h"
