@@ -7,11 +7,11 @@
 #include <netinet/in.h>
 
 #include "mports.h"
-#include "my_includes/network_helper.h"
-#include "my_includes/arp_service.h"
-#include "my_includes/icmp_service.h"
-#include "my_includes/scanning_service.h"
-#include "my_includes/constants.h"
+#include "services/network_helper.h"
+#include "services/arp_service.h"
+#include "services/icmp_service.h"
+#include "services/scanning_service.h"
+#include "constants.h"
 
 int main(int argc, const char *argv[]) {
     struct input_args *args = parse_input_args(argc, argv);

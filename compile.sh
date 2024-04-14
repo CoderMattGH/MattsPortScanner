@@ -1,2 +1,2 @@
-gcc mports.c ./my_includes/network_helper.c ./my_includes/packet_service.c ./my_includes/arp_service.c ./my_includes/process_service.c ./my_includes/icmp_service.c ./my_includes/scanning_service.c ./my_includes/tcp_service.c ./my_includes/checksum_service.c -lm -o mports
+gcc mports.c ./services/network_helper.c ./services/packet_service.c ./services/arp_service.c ./services/process_service.c ./services/icmp_service.c ./services/scanning_service.c ./services/tcp_service.c ./services/checksum_service.c -lm -o mports
 
