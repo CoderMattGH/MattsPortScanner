@@ -15,6 +15,7 @@ struct scan_raw_port_args {
     int start_port;
     int end_port;
     int inter_index;
+    unsigned char *finished;
 };
 
 struct scan_raw_arr_args {

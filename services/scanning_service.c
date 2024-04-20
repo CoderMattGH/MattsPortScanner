@@ -31,41 +31,29 @@ int * scan_ports_raw_multi(const unsigned char *src_ip,
                 get_ip_arr_str(tar_ip));
     }
 
-    pthread_t tid[MAX_THREADS];
+    pthread_t tid;
     
-    // Number of ports each thread should scan
-    int port_chunk = (int)(ceil((end_port - start_port) / (double)MAX_THREADS));
-    
-    if (DEBUG >= 2) {
-        printf("Creating %d threads to scan in chunks of %d ports\n", 
-                MAX_THREADS, port_chunk);
-    }
+    struct scan_raw_port_args *args = malloc(sizeof(struct scan_raw_port_args));
+    memset(args, 0, sizeof(struct scan_raw_port_args));
 
-    for (int i = 0; i < MAX_THREADS; i++) {
-        struct scan_raw_port_args *args = 
-                malloc(sizeof(struct scan_raw_port_args));
-        memset(args, 0, sizeof(struct scan_raw_port_args));
+    unsigned char finished = 0;
 
-        args->src_ip = src_ip;
-        args->tar_ip = tar_ip;
-        args->src_mac = src_mac;
-        args->tar_mac = tar_mac;
-        args->inter_index = inter_index;
+    args->src_ip = src_ip;
+    args->tar_ip = tar_ip;
+    args->src_mac = src_mac;
+    args->tar_mac = tar_mac;
+    args->inter_index = inter_index;
 
-        args->start_port = start_port + (port_chunk * i);
-        args->end_port = args->start_port + port_chunk - 1;
+    args->start_port = start_port;
+    args->end_port = end_port;
+    args->finished = &finished;
 
-        if (args->end_port > MAX_PORT)
-            args->end_port = MAX_PORT;
+    if (args->end_port > MAX_PORT)
+        args->end_port = MAX_PORT;
 
-        pthread_create(&tid[i], NULL, scan_ports_raw_proxy, (void *)args);
-    }
+    pthread_create(&tid, NULL, scan_ports_raw_proxy, (void *)args);
 
-    listen_for_ACK_replies(tar_ip, src_mac, 0);
-
-    for (int i = 0; i < MAX_THREADS; i++) {
-        pthread_join(tid[i], NULL);
-    }
+    listen_for_ACK_replies(tar_ip, src_mac, &finished);
 }
 
 int * scan_ports_raw_arr_multi(const unsigned char *src_ip, 
@@ -130,6 +118,9 @@ void * scan_ports_raw_proxy(void *scan_args) {
     scan_ports_raw(args->src_ip, args->tar_ip, args->src_mac, args->tar_mac,
             args->start_port, args->end_port, args->inter_index);
 
+    sleep(SLEEP_S_AFTER_FINISH);
+    *(args->finished) = 1;
+
     // Garbage collection
     free(scan_args);
 }
@@ -151,7 +142,8 @@ int scan_ports_raw(const unsigned char *src_ip, const unsigned char *tar_ip,
     int sock_raw;
 
     // Sleep time inbetween sending packets in microseconds
-    const int SLEEP_TIME_MICS = 1000 * 1000 * 0.0005;
+    //const int SLEEP_TIME_MICS = 1000 * 1000 * 0.000000001;
+    const int SLEEP_TIME_MICS = 0;
 
     for (int curr_port = start_port; curr_port <= end_port; curr_port++) {
         // Randomise source port
