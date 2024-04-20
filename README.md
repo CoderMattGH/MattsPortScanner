@@ -1,6 +1,6 @@
 # Matt's Port Scanner v0.1
 
-A port scanner that uses raw sockets to scan target machines very quickly.
+A TCP port scanner that uses raw sockets to scan target machines very quickly.
 
 © 2024 All rights reserved Matthew Dixon.
 
@@ -31,3 +31,5 @@ Some features I intend to implement in upcoming releases:
 * Fix multithreaded scanning so full port scans complete within 2 minutes.
 
 * Add the ability to specify a port range to scan.
+
+* Add IPv6 support.
