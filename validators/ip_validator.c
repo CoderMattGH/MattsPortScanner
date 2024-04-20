@@ -36,7 +36,7 @@ unsigned char validate_ip_str(const char* ip_str) {
         return 0;
     }
 
-    int i = 0;
+    int i;
     for (i = 0; token != NULL; i++) {
         // If more than 3 digits then not valid
         if (i >= IP_LEN) {
@@ -81,7 +81,7 @@ unsigned char validate_ip_str(const char* ip_str) {
     }
 
     // Check that IP address is 4 blocks of numbers
-    if (i != 3) {
+    if (i != 4) {
         if (DEBUG >= 2) {
             printf("IP address is not the correct length!\n");
         }
