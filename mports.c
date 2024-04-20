@@ -109,56 +109,52 @@ int main(int argc, const char *argv[]) {
 
     close(sock_raw);
 
-    switch(ping_ret_val) {
-        // ICMP reply received
-        case(1):
-            if (DEBUG >= 2) {
-                printf("Target IP (%s) is up.\n", get_ip_str(dest_ip));
-            }
-            
-            // Commence port scan
-            if (full_scan == 1) {
-                scan_ports_raw_multi(get_ip_arr_rep(loc_ip_add), 
-                        get_ip_arr_rep(dest_ip), loc_mac_add, mac_dest, 1, 
-                        MAX_PORT, loc_int_index);
-            } else {
-                unsigned short int *comm_ports = malloc(
-                    sizeof(unsigned short int) * MAX_PORT);
-                memset(comm_ports, 0, sizeof(unsigned short int) * MAX_PORT);
+    // ICMP reply received
+    if(ping_ret_val) {
+        if (DEBUG >= 2) {
+            printf("Target IP (%s) is up.\n", get_ip_str(dest_ip));
+        }
+        
+        // Commence port scan
+        if (full_scan == 1) {
+            scan_ports_raw_multi(get_ip_arr_rep(loc_ip_add), 
+                    get_ip_arr_rep(dest_ip), loc_mac_add, mac_dest, 1, 
+                    MAX_PORT, loc_int_index);
+        } else {
+            unsigned short int *comm_ports = malloc(
+                sizeof(unsigned short int) * MAX_PORT);
+            memset(comm_ports, 0, sizeof(unsigned short int) * MAX_PORT);
 
-                int comm_ports_len = get_common_ports_arr(comm_ports);
+            int comm_ports_len = get_common_ports_arr(comm_ports);
 
-                // Reallocate common ports array to save memory
-                comm_ports = realloc(comm_ports, 
-                    sizeof(unsigned short int) * comm_ports_len);
+            // Reallocate common ports array to save memory
+            comm_ports = realloc(comm_ports, 
+                sizeof(unsigned short int) * comm_ports_len);
 
-                if (comm_ports == NULL) {
-                    fprintf(stderr, "ERROR: Unknown error allocating memory!\n");
+            if (comm_ports == NULL) {
+                fprintf(stderr, "ERROR: Unknown error allocating memory!\n");
 
-                    return -1;
-                }
-
-                scan_ports_raw_arr_multi(get_ip_arr_rep(loc_ip_add),
-                        get_ip_arr_rep(dest_ip), loc_mac_add, mac_dest, 
-                        comm_ports, comm_ports_len, loc_int_index);
+                return -1;
             }
 
-            break;
-        // ICMP reply not received
-        case(0):
-            if (DEBUG >= 0) {
-                printf("Target IP (%s) is down or not responding to ping " 
-                        "requests\n", get_ip_str(dest_ip));
-            }
+            scan_ports_raw_arr_multi(get_ip_arr_rep(loc_ip_add),
+                    get_ip_arr_rep(dest_ip), loc_mac_add, mac_dest, 
+                    comm_ports, comm_ports_len, loc_int_index);
+        }
+    }
+    else if (ping_ret_val == 0) {
+    // ICMP reply not received
+        if (DEBUG >= 0) {
+            printf("Target IP (%s) is down or not responding to ping " 
+                    "requests\n", get_ip_str(dest_ip));
+        }
+    }
+    // An error occurred
+    else if (ping_ret_val == -1) {
+        fprintf(stderr, 
+                "ERROR: An unknown error occurred with the ICMP request\n");
 
-            break;
-        // An error occurred
-        case(-1):
-        default:
-            fprintf(stderr, 
-                    "ERROR: An unknown error occurred with the ICMP request\n");
-    
-            return -1;
+        return -1;
     }
 
     if (DEBUG >= 2) {
