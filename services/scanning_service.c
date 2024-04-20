@@ -61,7 +61,7 @@ int * scan_ports_raw_multi(const unsigned char *src_ip,
         pthread_create(&tid[i], NULL, scan_ports_raw_proxy, (void *)args);
     }
 
-    listen_for_ACK_replies(tar_ip, src_mac);
+    listen_for_ACK_replies(tar_ip, src_mac, 0);
 
     for (int i = 0; i < MAX_THREADS; i++) {
         pthread_join(tid[i], NULL);
@@ -78,8 +78,11 @@ int * scan_ports_raw_arr_multi(const unsigned char *src_ip,
 
     pthread_t tid;
 
+    // Value shared between threads to indicate when the port scan has finished
+    unsigned char finished = 0;
+
     struct scan_raw_arr_args *args = malloc(sizeof(struct scan_raw_arr_args));
-    memset(args, 0, sizeof(struct scan_raw_port_args));
+    memset(args, 0, sizeof(struct scan_raw_arr_args));
 
     args->src_ip = src_ip;
     args->tar_ip = tar_ip;
@@ -90,9 +93,11 @@ int * scan_ports_raw_arr_multi(const unsigned char *src_ip,
     args->ports = ports;
     args->ports_len = ports_len;
 
+    args->finished = &finished;
+
     pthread_create(&tid, NULL, scan_ports_raw_arr_proxy, (void *) args);
 
-    listen_for_ACK_replies(tar_ip, src_mac);
+    listen_for_ACK_replies(tar_ip, src_mac, &finished);
 }
 
 void * scan_ports_raw_arr_proxy(void *scan_args) {
@@ -104,6 +109,12 @@ void * scan_ports_raw_arr_proxy(void *scan_args) {
 
     scan_ports_raw_arr(args->src_ip, args->tar_ip, args->src_mac, args->tar_mac, 
             args->ports, args->ports_len, args->inter_index);
+
+    printf("Finished scan!\n");
+
+    // Sleep for 5 seconds and then signal all packets were sent
+    sleep(SLEEP_S_AFTER_FINISH);
+    *(args->finished) = 1;
 
     // Garbage collection
     free(scan_args);

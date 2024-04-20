@@ -1,3 +1,6 @@
+// Time to sleep after finishing sending all the SYN packets
+#define SLEEP_S_AFTER_FINISH 5
+
 struct scan_port_args {
     struct in_addr *tar_ip;
     int start_port;
@@ -21,7 +24,8 @@ struct scan_raw_arr_args {
     const unsigned char *tar_mac;
     const unsigned short *ports;
     int ports_len;
-    int inter_index;    
+    int inter_index;
+    unsigned char *finished;    
 };
 
 /*

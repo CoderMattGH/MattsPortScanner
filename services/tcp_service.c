@@ -105,7 +105,7 @@ unsigned char * construct_syn_packet(const char *src_ip, const char *dst_ip,
 }
 
 unsigned short int * listen_for_ACK_replies(const unsigned char* tar_ip, 
-        const unsigned char* dest_mac) {
+        const unsigned char* dest_mac, unsigned char *stop_listening) {
     if (DEBUG >= 2) {
         printf("Listening to ACK replies from target IP: %s\n", 
                 get_ip_arr_str(tar_ip));
@@ -133,13 +133,39 @@ unsigned short int * listen_for_ACK_replies(const unsigned char* tar_ip,
     struct sockaddr saddr;
     int saddr_len = sizeof(struct sockaddr);
 
+    // Sleep time in microseconds (0.2 seconds)
+    const int SLEEP_TIME_MICS = 1000 * 1000 * 0.2;
+
     int array_index = 0;
-    while (1) {
+
+    while (!(*stop_listening)) {
+        // Reset errno
+        errno = 0;
+
         // Reset buffer
         memset(rec_buff, 0, MAX_R_BUFF_SZ);
 
+        /*
         int buf_len = recvfrom(sock_listen_raw, rec_buff, MAX_R_BUFF_SZ, 0, 
                 &saddr, (socklen_t *)&saddr_len);
+        */
+
+        // Non-blocking call
+        int buf_len = recvfrom(sock_listen_raw, rec_buff, MAX_R_BUFF_SZ, 
+                MSG_DONTWAIT, &saddr, (socklen_t *)&saddr_len);
+        
+        if (buf_len == -1) {
+            if (errno == EWOULDBLOCK || errno == EAGAIN) {
+                // Sleep before next iteration
+                usleep(SLEEP_TIME_MICS);
+
+                continue;
+            }
+            // An error occurred
+            else {
+                return NULL;
+            }
+        }
 
         // Extract ethernet header
         struct ethhdr *eth = (struct ethhdr *)(rec_buff);
