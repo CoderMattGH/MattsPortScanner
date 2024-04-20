@@ -14,6 +14,10 @@
 #include "validators/ip_validator.h"
 #include "constants/constants.h"
 
+#include "validators/ip_validator.h"
+#include "validators/mac_validator.h"
+#include "validators/validate_port.h"
+
 int main(int argc, const char *argv[]) {
     struct input_args *args = parse_input_args(argc, argv);
 
@@ -118,8 +122,21 @@ int main(int argc, const char *argv[]) {
                         get_ip_arr_rep(dest_ip), loc_mac_add, mac_dest, 1, 
                         MAX_PORT, loc_int_index);
             } else {
-                unsigned short int *comm_ports;
+                unsigned short int *comm_ports = malloc(
+                    sizeof(unsigned short int) * MAX_PORT);
+                memset(comm_ports, 0, sizeof(unsigned short int) * MAX_PORT);
+
                 int comm_ports_len = get_common_ports_arr(comm_ports);
+
+                // Reallocate common ports array to save memory
+                comm_ports = realloc(comm_ports, 
+                    sizeof(unsigned short int) * comm_ports_len);
+
+                if (comm_ports == NULL) {
+                    fprintf(stderr, "ERROR: Unknown error allocating memory!\n");
+
+                    return -1;
+                }
 
                 scan_ports_raw_arr_multi(get_ip_arr_rep(loc_ip_add),
                         get_ip_arr_rep(dest_ip), loc_mac_add, mac_dest, 
@@ -190,7 +207,13 @@ struct input_args * parse_input_args(int argc, const char **argv) {
                 return NULL;
             }
 
+            // Validate IP address string
+            if (!validate_ip_str(argv[i + 1])) {
+                return NULL;
+            }
+                
             in_args->tar_ip = get_ip_from_str(argv[i + 1]);
+
             ip_param_set = 1;
             i++;
         }
@@ -199,8 +222,8 @@ struct input_args * parse_input_args(int argc, const char **argv) {
                 return NULL;
             }
 
-            // TODO: Validate dev name here
-            if (argv[i + 1] == NULL) {
+            // Validate dev name
+            if (argv[i + 1] == NULL || strlen(argv[i + 1]) < 1) {
                 return NULL;
             }
 
@@ -307,7 +330,11 @@ int get_common_ports_arr(unsigned short int *arr_copy) {
 
     const int arr_len = sizeof(COMM_POR_TCP) / sizeof(unsigned short int);
 
-    arr_copy = malloc(sizeof(unsigned short int) * arr_len);
+    // Copy array to arr_copy
+
+    for(int i = 0; i < arr_len; i++) {
+        arr_copy[i] = COMM_POR_TCP[i];
+    }
 
     return arr_len;
 }
