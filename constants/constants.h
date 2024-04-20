@@ -1,6 +1,12 @@
 #define VERSION "0.1"
 
-#define DEBUG 2
+/*
+ * 0 for no debugging messages.
+ * 1 for low debugging messages.
+ * 2 for medium debugging messages.
+ * 3 for high debugging messages.
+ */
+#define DEBUG 0
 
 #define MAX_PORT 65535
 #define MAC_LEN 6
