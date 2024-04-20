@@ -218,7 +218,7 @@ struct open_ports_dto * listen_for_ACK_replies(const unsigned char* tar_ip,
     }
 
     // Realloc array
-    open_ports = realloc(open_ports, open_ports_len);
+    open_ports = realloc(open_ports, open_ports_len * sizeof(short int));
 
     if (open_ports == NULL) {
         return NULL;
