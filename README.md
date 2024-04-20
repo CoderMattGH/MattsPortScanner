@@ -1,6 +1,6 @@
 # Matt's Port Scanner v0.1
 
-A TCP port scanner that uses raw sockets to scan target machines very quickly.
+A TCP port scanner for Linux that uses raw sockets to scan target machines very quickly.
 
 © 2024 All rights reserved Matthew Dixon.
 
