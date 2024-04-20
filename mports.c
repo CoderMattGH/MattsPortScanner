@@ -22,8 +22,6 @@ int main(int argc, const char *argv[]) {
     struct input_args *args = parse_input_args(argc, argv);
 
     if (args == NULL) {
-        print_usage();
-
         return 0;
     }
 
