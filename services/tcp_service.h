@@ -1,3 +1,8 @@
+struct open_ports_dto {
+    unsigned short int *open_ports;
+    unsigned int open_ports_len;
+};
+
 /*
  * Function: construct_syn_packet
  * ------------------------------
@@ -38,5 +43,5 @@ unsigned char * construct_syn_packet(const char *src_ip, const char *dst_ip,
  * return: A unsigned short int array of open ports or NULL on error or no ports
  *         found. errno is set to EIO(5) on error.
   */
-unsigned short int * listen_for_ACK_replies(const unsigned char* tar_ip, 
+struct open_ports_dto * listen_for_ACK_replies(const unsigned char* tar_ip, 
         const unsigned char* dest_mac, unsigned char *stop_listening);

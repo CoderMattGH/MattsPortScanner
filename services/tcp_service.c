@@ -104,7 +104,7 @@ unsigned char * construct_syn_packet(const char *src_ip, const char *dst_ip,
     return sendbuff;
 }
 
-unsigned short int * listen_for_ACK_replies(const unsigned char* tar_ip, 
+struct open_ports_dto * listen_for_ACK_replies(const unsigned char* tar_ip, 
         const unsigned char* dest_mac, unsigned char *stop_listening) {
     if (DEBUG >= 2) {
         printf("Listening to ACK replies from target IP: %s\n", 
@@ -112,7 +112,7 @@ unsigned short int * listen_for_ACK_replies(const unsigned char* tar_ip,
     }
 
     // Temporary array to hold open port numbers.
-    unsigned short int open_ports[MAX_PORT] = {0};
+    unsigned short int *open_ports = malloc(sizeof(short int) * MAX_PORT);
     
     int sock_listen_raw = socket(AF_PACKET, SOCK_RAW, htons(ETH_P_IP));
     //int sock_listen_raw = socket(AF_PACKET, SOCK_RAW, htons(ETH_P_ALL));
@@ -144,11 +144,6 @@ unsigned short int * listen_for_ACK_replies(const unsigned char* tar_ip,
 
         // Reset buffer
         memset(rec_buff, 0, MAX_R_BUFF_SZ);
-
-        /*
-        int buf_len = recvfrom(sock_listen_raw, rec_buff, MAX_R_BUFF_SZ, 0, 
-                &saddr, (socklen_t *)&saddr_len);
-        */
 
         // Non-blocking call
         int buf_len = recvfrom(sock_listen_raw, rec_buff, MAX_R_BUFF_SZ, 
@@ -209,28 +204,30 @@ unsigned short int * listen_for_ACK_replies(const unsigned char* tar_ip,
             printf("Open TCP port detected: %d\n", htons(th->source));
         }
 
-        open_ports[array_index++] = htons(th->source);
+        open_ports[array_index] = (unsigned short int)htons(th->source);
+
+        array_index++;
     }
 
     // Find real length of open_ports array
-    int open_ports_len = 0;
-    for (open_ports_len; open_ports[open_ports_len] != 0; open_ports_len++) {}
-    open_ports_len++;
+    int open_ports_len = array_index;
 
     // No open ports found
     if (open_ports_len == 0) {
         return NULL;
     }
 
-    // Copy open ports to new malloced array
-    unsigned short int *open_ports_perm = 
-            malloc(sizeof(short int) * open_ports_len);
-    memset(open_ports_perm, 0, sizeof(short int) * open_ports_len);
+    // Realloc array
+    open_ports = realloc(open_ports, open_ports_len);
 
-    // Transfer values
-    for (int i = 0; i < open_ports_len; i++) {
-        open_ports_perm[i] = open_ports[i];
+    if (open_ports == NULL) {
+        return NULL;
     }
 
-    return open_ports_perm;
+    struct open_ports_dto *open_ports_struct = malloc(
+            sizeof(struct open_ports_dto));
+    open_ports_struct->open_ports = open_ports;
+    open_ports_struct->open_ports_len = open_ports_len;
+
+    return open_ports_struct;
 }
