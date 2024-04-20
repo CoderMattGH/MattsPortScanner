@@ -20,14 +20,6 @@ unsigned char validate_mac_add(const unsigned char *mac_add) {
     }
 
     for (int i = 0; i < MAC_LEN; i++) {
-        if (mac_add[i] == NULL) {
-            if (DEBUG >= 2) {
-                printf("MAC address has a NULL entry!\n");
-            }
-
-            return 0;
-        }
-
         if (mac_add[i] < 0 || mac_add[i] > 255) {
             if (DEBUG >= 2) {
                 printf("MAC address is outside of valid range\n");
