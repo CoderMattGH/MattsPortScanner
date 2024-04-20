@@ -50,9 +50,9 @@ struct scan_raw_arr_args {
  * 
  * inter_index: The network interface index.
  * 
- * return: An int array of open TCP port numbers.
+ * return: -1 for error and 0 for success.
  */
-int * scan_ports_raw_multi(const unsigned char *src_ip,
+int scan_ports_raw_multi(const unsigned char *src_ip,
         const unsigned char *tar_ip, const unsigned char *src_mac,
         const unsigned char *tar_mac, int start_port, int end_port, 
         int inter_index);
@@ -78,9 +78,9 @@ int * scan_ports_raw_multi(const unsigned char *src_ip,
  * 
  * inter_index: The network interface number.
  * 
- * return: An integer array of open TCP port numbers.
+ * return: -1 for error, 0 for success.
  */
-int * scan_ports_raw_arr_multi(const unsigned char *src_ip, 
+int scan_ports_raw_arr_multi(const unsigned char *src_ip, 
         const unsigned char *tar_ip, const unsigned char *src_mac,
         const unsigned char *tar_mac, const unsigned short *ports, 
         int ports_len, int inter_index);
@@ -173,3 +173,14 @@ int scan_ports_raw_arr(const unsigned char *src_ip,
  * Return: An unsigned short int between 1000 and MAX_PORT.
  */
 unsigned short int get_random_port_num();
+
+/*
+ * Function: print_open_ports
+ * --------------------------
+ * Prints a message describing the scan results.
+ * 
+ * open_ports: A array containing all the open ports.
+ * 
+ * open_ports_len: The length of the open ports array.
+ */
+void print_open_ports(unsigned short int *open_ports, int open_ports_len);

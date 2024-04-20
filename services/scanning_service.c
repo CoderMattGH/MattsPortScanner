@@ -16,14 +16,14 @@
 #include "tcp_service.h"
 #include "../constants/constants.h"
 
-int * scan_ports_raw_multi(const unsigned char *src_ip,
+int scan_ports_raw_multi(const unsigned char *src_ip,
         const unsigned char *tar_ip, const unsigned char *src_mac,
         const unsigned char *tar_mac, int start_port, int end_port, 
         int inter_index) {
     if (start_port < 1 || end_port > MAX_PORT) {
         fprintf(stderr, "ERROR: Ports must be between 0 and %d\n", MAX_PORT);
         
-        return NULL;
+        return -1;
     }
 
     if (DEBUG >= 0) {
@@ -53,10 +53,20 @@ int * scan_ports_raw_multi(const unsigned char *src_ip,
 
     pthread_create(&tid, NULL, scan_ports_raw_proxy, (void *)args);
 
-    listen_for_ACK_replies(tar_ip, src_mac, &finished);
+    struct open_ports_dto *open_ports = 
+            listen_for_ACK_replies(tar_ip, src_mac, &finished);
+
+    // An error occurred
+    if (open_ports == NULL) {
+        return -1;
+    } else {
+        print_open_ports(open_ports->open_ports, open_ports->open_ports_len);
+    }
+
+    return 0;
 }
 
-int * scan_ports_raw_arr_multi(const unsigned char *src_ip, 
+int scan_ports_raw_arr_multi(const unsigned char *src_ip, 
         const unsigned char *tar_ip, const unsigned char *src_mac,
         const unsigned char *tar_mac, const unsigned short *ports, 
         int ports_len, int inter_index) {
@@ -85,7 +95,17 @@ int * scan_ports_raw_arr_multi(const unsigned char *src_ip,
 
     pthread_create(&tid, NULL, scan_ports_raw_arr_proxy, (void *) args);
 
-    listen_for_ACK_replies(tar_ip, src_mac, &finished);
+    struct open_ports_dto *open_ports = 
+            listen_for_ACK_replies(tar_ip, src_mac, &finished);
+
+    // Error occurred during scan
+    if (open_ports == NULL) {
+        return -1;
+    }
+
+    print_open_ports(open_ports->open_ports, open_ports->open_ports_len);
+
+    return 0;
 }
 
 void * scan_ports_raw_arr_proxy(void *scan_args) {
@@ -97,8 +117,6 @@ void * scan_ports_raw_arr_proxy(void *scan_args) {
 
     scan_ports_raw_arr(args->src_ip, args->tar_ip, args->src_mac, args->tar_mac, 
             args->ports, args->ports_len, args->inter_index);
-
-    printf("Finished scan!\n");
 
     // Sleep for 5 seconds and then signal all packets were sent
     sleep(SLEEP_S_AFTER_FINISH);
@@ -243,4 +261,18 @@ unsigned short int get_random_port_num() {
     const int END = MAX_PORT;
 
     return (unsigned short int)((rand() % (START - END + 1)) + START);
+}
+
+void print_open_ports(unsigned short int *open_ports, int open_ports_len) {
+    if (open_ports_len <= 0) {
+        printf("No open ports were detected on the target\n");
+    } else {
+        printf("\n");
+        printf("Open Ports Detected\n");
+        printf("-------------------\n");
+
+        for (int i = 0; i < open_ports_len; i++) {
+            printf("Port: %d\n", open_ports[i]);
+        }
+    }    
 }
